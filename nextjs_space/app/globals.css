@@ -1,0 +1,385 @@
+@import '../lib/animations.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 96%;
+    --foreground: 210 20% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 20% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 20% 12%;
+
+    --primary: 250 90% 65%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 280 85% 60%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 15% 85%;
+    --muted-foreground: 210 10% 45%;
+
+    --accent: 30 100% 60%;
+    --accent-foreground: 210 20% 12%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 210 20% 88%;
+    --input: 210 20% 92%;
+    --ring: 250 90% 65%;
+
+    --radius: 0.875rem;
+    --radius-sm: calc(0.875rem - 4px);
+    --radius-lg: calc(0.875rem + 4px);
+    --radius-full: 9999px;
+
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --spacing-2xl: 48px;
+    --spacing-3xl: 64px;
+
+    --shadow-sm: 0 2px 4px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 12px 0 rgb(0 0 0 / 0.08);
+    --shadow-lg: 0 12px 32px 0 rgb(0 0 0 / 0.12);
+    --shadow-xl: 0 20px 48px 0 rgb(0 0 0 / 0.15);
+
+    --duration-fast: 150ms;
+    --duration-normal: 250ms;
+    --duration-slow: 350ms;
+
+    --chart-1: 250 90% 65%;
+    --chart-2: 280 85% 60%;
+    --chart-3: 30 100% 60%;
+    --chart-4: 190 95% 55%;
+    --chart-5: 160 85% 55%;
+  }
+
+  .dark {
+    --background: 220 13% 12%;
+    --foreground: 210 15% 95%;
+
+    --card: 220 15% 16%;
+    --card-foreground: 210 15% 95%;
+
+    --popover: 220 15% 16%;
+    --popover-foreground: 210 15% 95%;
+
+    --primary: 250 100% 70%;
+    --primary-foreground: 220 13% 12%;
+
+    --secondary: 280 90% 65%;
+    --secondary-foreground: 220 13% 12%;
+
+    --muted: 220 15% 30%;
+    --muted-foreground: 210 10% 60%;
+
+    --accent: 30 100% 65%;
+    --accent-foreground: 220 13% 12%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 220 13% 12%;
+
+    --border: 220 15% 22%;
+    --input: 220 15% 20%;
+    --ring: 250 100% 70%;
+
+    --shadow-sm: 0 2px 4px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 12px 0 rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 12px 32px 0 rgb(0 0 0 / 0.5);
+    --shadow-xl: 0 20px 48px 0 rgb(0 0 0 / 0.6);
+
+    --chart-1: 263 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  ::selection {
+    background-color: hsl(var(--primary) / 0.2);
+    color: hsl(var(--primary));
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background-color: transparent; }
+  ::-webkit-scrollbar-thumb { background-color: hsl(var(--border)); border-radius: 9999px; }
+  ::-webkit-scrollbar-thumb:hover { background-color: hsl(var(--muted-foreground) / 0.5); }
+}
+
+@layer utilities {
+  /* Hide scrollbar */
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+  .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Hero background */
+  .hero-gradient {
+    background:
+      radial-gradient(ellipse 60% 50% at 50% -10%, hsl(262 83% 58% / 0.12), transparent),
+      radial-gradient(ellipse 40% 40% at 80% 0%, hsl(280 80% 60% / 0.08), transparent),
+      radial-gradient(ellipse 40% 30% at 20% 10%, hsl(240 80% 60% / 0.06), transparent);
+  }
+
+  .dark .hero-gradient {
+    background:
+      radial-gradient(ellipse 60% 50% at 50% -10%, hsl(263 70% 50% / 0.2), transparent),
+      radial-gradient(ellipse 40% 40% at 80% 0%, hsl(280 80% 60% / 0.1), transparent),
+      radial-gradient(ellipse 40% 30% at 20% 10%, hsl(240 80% 60% / 0.08), transparent);
+  }
+}
+
+/* Marp Slide Container - proper rendering of Marp output */
+.slide-viewer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Wrapper for the Marp slide - ensures SVG scales to fill container */
+.marp-slide-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* The div.marpit container */
+.marp-slide-wrapper .marpit {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* SVG element from Marp - scale to fit container while maintaining aspect ratio */
+.marp-slide-wrapper .marpit > svg {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* Modern Component Styles */
+@layer components {
+  /* Button Styles */
+  button, [role="button"] {
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Modern Button with gradient background */
+  .btn-modern {
+    @apply relative inline-flex items-center justify-center font-medium rounded-lg overflow-hidden;
+    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .btn-modern::before {
+    @apply absolute inset-0 rounded-lg;
+    background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+    pointer-events: none;
+  }
+
+  .btn-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px 0 rgb(0 0 0 / 0.15);
+  }
+
+  .btn-modern:active {
+    transform: translateY(0);
+  }
+
+  /* Input and Select Styles */
+  input, textarea, select {
+    transition: border-color var(--duration-normal), box-shadow var(--duration-normal);
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: hsl(var(--primary));
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.1);
+  }
+
+  /* Card elevated styles */
+  .card-elevated {
+    @apply rounded-xl border border-border bg-card shadow-md;
+    transition: all var(--duration-normal);
+  }
+
+  .card-elevated:hover {
+    box-shadow: 0 12px 32px 0 rgb(0 0 0 / 0.12);
+    transform: translateY(-2px);
+  }
+
+  /* Top bar gradient */
+  .top-bar-gradient {
+    background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.8) 100%);
+    box-shadow: 0 4px 12px 0 rgb(0 0 0 / 0.08);
+  }
+
+  /* Section container with modern styling */
+  .section-modern {
+    @apply rounded-xl border border-border bg-card p-4;
+    transition: all var(--duration-normal);
+  }
+
+  .section-modern:hover {
+    border-color: hsl(var(--primary) / 0.3);
+    box-shadow: 0 8px 24px 0 rgb(0 0 0 / 0.1);
+  }
+}
+
+/* Slide Animations */
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Apply animations to slide-viewer when content changes */
+.slide-viewer {
+  animation: fadeIn var(--duration-normal) ease-out;
+}
+
+.slide-content {
+  animation: zoomIn var(--duration-normal) ease-out;
+}
+
+/* Alternative animation classes */
+.slide-content.animate-slide-left {
+  animation: slideInLeft var(--duration-normal) ease-out;
+}
+
+.slide-content.animate-slide-right {
+  animation: slideInRight var(--duration-normal) ease-out;
+}
+
+.slide-content.animate-fade-in {
+  animation: fadeIn var(--duration-normal) ease-out;
+}
+/* Modern UI Enhancements */
+.markdown-editor {
+  @apply rounded-xl border border-border/50 focus-within:border-primary/30 transition-colors;
+}
+
+/* Smooth scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+  transition: background var(--duration-normal);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Enhanced focus styles for accessibility */
+:focus-visible {
+  outline: 2px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Smooth transitions for all interactive elements */
+a, button, input, select, textarea {
+  transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Glass morphism effect for floating elements */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.dark .glass-effect {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Gradient text effect */
+.gradient-text {
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Animate.css base */
+.animated {
+  animation-duration: 0.5s;
+  animation-fill-mode: both;
+}

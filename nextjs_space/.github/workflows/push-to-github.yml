@@ -1,0 +1,32 @@
+name: Push to GitHub
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_message:
+        description: 'Commit message'
+        required: false
+        default: 'chore: update from Abacus AI'
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure Git
+        run: |
+          git config user.name "techbuzzz"
+          git config user.email "techbuzzz@users.noreply.github.com"
+
+      - name: Push to GitHub
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_MSG: ${{ github.event.inputs.commit_message }}
+        run: |
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/techbuzzz/marp-play.git"
+          git branch -M main
+          git push -u origin main --force-with-lease
+          echo "✅ Successfully pushed to GitHub"
+          echo "Repository: https://github.com/techbuzzz/marp-play"

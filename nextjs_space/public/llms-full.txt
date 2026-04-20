@@ -1,0 +1,164 @@
+# Marp Player — Complete Documentation
+
+> Free online Markdown-to-Slides presentation player powered by Marp Core.
+> URL: https://marp-play.techbuzzz.me
+
+## Overview
+
+Marp Player is a professional web application that converts Marp-flavored Markdown into presentation slides. It provides real-time preview, PDF export, fullscreen mode, speaker notes, and multiple navigation methods. The tool is free, open-source, and runs entirely in the browser with server-side rendering.
+
+## Architecture
+
+### Rendering Pipeline
+1. User inputs Marp Markdown in the editor panel
+2. After 500ms debounce, markdown is sent to `/api/render-marp`
+3. Server renders via `@marp-team/marp-core` with `html: true, script: false`
+4. Output: SVG-wrapped slides (`<div class="marpit"><svg data-marpit-svg>...</svg></div>`)
+5. Each SVG contains a `<foreignObject>` with a `<section>` element
+6. Global CSS is extracted and injected via `<style>` tag
+7. Speaker notes extracted from `<aside class="notes">` and HTML comments
+
+### API Routes
+- `POST /api/render-marp` — Renders Marp markdown, returns `{ slides: [{html, notes}], css }`
+- `POST /api/export-pdf` — Renders all slides to HTML, converts to PDF via Playwright-based API
+- `GET /api/markdown?file=<name>` — Loads example markdown files from `public/examples/`
+
+## Features in Detail
+
+### 1. Marp Syntax Support
+Full compatibility with @marp-team/marp-core:
+- YAML frontmatter (marp, theme, paginate, footer, header, size, style)
+- Three built-in themes: default, gaia, uncover
+- Custom CSS via `style:` frontmatter block
+- Scoped directives: `<!-- _class: -->`, `<!-- _backgroundColor: -->`, `<!-- _paginate: -->`
+- Background images: `![bg](url)`, `![bg left](url)`, `![bg right:40%](url)`
+- Image sizing: `![width:300px](url)`, `![height:200px](url)`
+- Math: inline `$E=mc^2$` and block `$$\int f(x)dx$$`
+- Code blocks with syntax highlighting
+- HTML content (tables, divs, custom classes)
+- Presenter notes via `<!-- notes -->` or `<aside class="notes">`
+
+### 2. Navigation Methods
+- **Keyboard**: Arrow keys (←→), Space (next), Home (first), End (last), F (fullscreen), Escape (exit)
+- **Click-to-advance**: Toggle switch in toolbar. Click anywhere on slide to advance. Loops back to first slide.
+- **Auto-play**: Play/Pause button with interval selector (1s, 2s, 3s, 4s, 5s, 10s). Stops at last slide.
+- **Navigator buttons**: First, Previous, Next, Last buttons with slide counter
+
+### 3. PDF Export
+- Server-side rendering: Marp → HTML → PDF
+- Landscape 16:9 format (1280×720px per page)
+- One slide per page with CSS page breaks
+- All custom CSS styles preserved
+- Background graphics printed
+- Async generation with loading indicator
+
+### 4. Fullscreen Mode
+- Press F or click Fullscreen button
+- All controls available in fullscreen bar
+- Click-to-advance works in fullscreen
+- Escape exits properly (synced with browser fullscreenchange event)
+- Auto-play controls in fullscreen
+
+### 5. Editor Panel
+- Textarea with monospace font for markdown editing
+- Load files: .md, .markdown, .txt (direct), .json (Marp Player format)
+- Save as JSON (includes markdown + timestamp)
+- Example button loads comprehensive demo presentation
+- Collapsible on mobile devices
+
+### 6. Speaker Notes
+- Extracted from HTML comments and `<aside>` tags
+- Displayed in collapsible panel below slide viewer
+- Preserved formatting with pre-wrap
+
+### 7. Themes
+- App themes: Modern, Minimal, Dark, Light (UI styling)
+- Marp themes: default, gaia, uncover (slide content styling)
+- Custom CSS via frontmatter overrides theme styles
+
+### 8. Responsive Design
+- Mobile-first layout with Tailwind CSS
+- Stacked panels on small screens (editor top, viewer bottom)
+- Side-by-side on desktop (md+ breakpoint)
+- Compact navigation on mobile (no First/Last buttons)
+- Collapsible editor panel
+- Touch-friendly buttons
+
+## Custom CSS Examples
+
+### Grid Layout
+```html
+<div class="grid-2">
+  <div>Column 1</div>
+  <div>Column 2</div>
+</div>
+```
+
+CSS in frontmatter:
+```css
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+```
+
+### Cards
+```css
+.card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+```
+
+### Styled Sections
+```markdown
+<!-- _class: lead -->
+# Title Slide
+
+<!-- _class: dark -->
+## Dark Background Slide
+```
+
+## Tech Stack
+- **Framework**: Next.js 14 (App Router, TypeScript)
+- **Rendering**: @marp-team/marp-core (server-side dynamic import)
+- **Styling**: Tailwind CSS, shadcn/ui components
+- **PDF Export**: Abacus HTML2PDF API (Playwright-based)
+- **Fonts**: DM Sans, Plus Jakarta Sans, JetBrains Mono
+- **Deployment**: Docker (multi-stage build) or Abacus AI hosting
+
+## Keyboard Shortcuts Reference
+| Key | Action |
+|-----|--------|
+| → / Space | Next slide |
+| ← | Previous slide |
+| Home | First slide |
+| End | Last slide |
+| F | Toggle fullscreen |
+| Escape | Exit fullscreen / Show editor |
+
+## Getting Started
+1. Open Marp Player in your browser
+2. Paste Marp Markdown in the editor (left panel)
+3. Or click "Example" to load the demo presentation
+4. Use toolbar controls or keyboard to navigate
+5. Click PDF button to export
+6. Press F for fullscreen presentation
+
+## Self-Hosting
+```bash
+git clone https://github.com/techbuzzz/marp-play.git
+cd marp-play/nextjs_space
+yarn install
+yarn dev
+```
+
+Or with Docker:
+```bash
+docker-compose up
+```
+
+## Source Code
+GitHub: https://github.com/techbuzzz/marp-play
+License: MIT

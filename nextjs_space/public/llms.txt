@@ -1,0 +1,67 @@
+# Marp Player
+
+> Free online Markdown-to-Slides presentation player powered by Marp Core.
+
+Marp Player is a web-based tool that renders Marp-flavored Markdown into beautiful presentation slides in real-time. It runs entirely in the browser with server-side rendering via @marp-team/marp-core.
+
+## Key Features
+
+- Full Marp syntax support (frontmatter, directives, themes, custom CSS)
+- Real-time slide preview with 500ms debounce
+- PDF export (landscape 16:9, one slide per page, styles preserved)
+- Fullscreen presentation mode (press F)
+- Click-to-advance navigation (toggle switch)
+- Auto-play with configurable intervals (1s–10s)
+- Keyboard shortcuts (arrows, Space, Home/End)
+- Speaker notes (HTML comments or <aside> tags)
+- Built-in Marp themes (default, gaia, uncover)
+- Dark/Light mode
+- Mobile-first responsive design
+- Load .md, .txt, .json files directly
+- Save presentations as JSON
+- Built-in example presentation demonstrating all features
+
+## How It Works
+
+1. User pastes Marp Markdown in the editor panel
+2. Server-side API renders markdown via @marp-team/marp-core
+3. Each slide is an SVG element with full CSS support
+4. Navigate with arrows, clicks, auto-play, or fullscreen mode
+5. Export to PDF via server-side HTML-to-PDF conversion
+
+## Marp Syntax Quick Reference
+
+Slides are separated by `---` (three dashes on a new line).
+
+Frontmatter example:
+```yaml
+---
+marp: true
+theme: default
+paginate: true
+footer: My Presentation
+size: 16:9
+style: |
+  section { background: #fff; }
+  h1 { color: #333; }
+---
+```
+
+Directives:
+- `<!-- _class: lead -->` — Apply CSS class to current slide
+- `<!-- _paginate: false -->` — Hide page number on current slide
+- `<!-- _backgroundColor: #000 -->` — Set slide background
+- `![bg](url)` — Background image
+- `![bg left](url)` — Split background
+
+## Tech Stack
+
+- Next.js 14 (React, TypeScript)
+- @marp-team/marp-core for server-side rendering
+- Tailwind CSS + shadcn/ui
+- HTML2PDF API for PDF export
+- Docker support
+
+## Links
+
+- llms-full.txt: /llms-full.txt
