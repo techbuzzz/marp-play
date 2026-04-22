@@ -26,8 +26,17 @@ model SharedPresentation {
   apiKeyId  String?
   apiKeyRef AppApiKey? @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
 
+  // Origin of the creating request:
+  //   "ui"  — same-origin browser request from /api/internal/play (no auth required)
+  //   "api" — REST client calling /api/v1/play with a Bearer token
+  //   "mcp" — MCP client calling /api/v1/mcp tools/call (create_share_link)
+  // Default is "api" so legacy rows created before this column existed keep
+  // sensible semantics.
+  source    String   @default("api")
+
   @@index([createdAt])
   @@index([apiKeyId])
+  @@index([source])
   @@map("shared_presentations")
 }
 

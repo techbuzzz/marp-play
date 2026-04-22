@@ -247,6 +247,66 @@ export async function GET() {
           },
         },
       },
+      '/mcp': {
+        post: {
+          operationId: 'mcpJsonRpc',
+          summary: 'Model Context Protocol endpoint (Streamable HTTP)',
+          description:
+            'JSON-RPC 2.0 endpoint implementing the MCP Streamable HTTP transport. Native MCP clients (Claude Desktop, Cursor, Cline, etc.) should POST JSON-RPC messages here. Non-MCP agents (OpenAI GPTs, LangChain) should instead use the REST operations documented in this spec.',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['jsonrpc', 'method'],
+                  properties: {
+                    jsonrpc: { type: 'string', enum: ['2.0'] },
+                    id: { oneOf: [{ type: 'string' }, { type: 'number' }, { type: 'null' }] },
+                    method: {
+                      type: 'string',
+                      description:
+                        'MCP method name: initialize, tools/list, tools/call, ping, or a notification like notifications/initialized.',
+                    },
+                    params: { type: 'object' },
+                  },
+                  example: {
+                    jsonrpc: '2.0',
+                    id: 1,
+                    method: 'initialize',
+                    params: {
+                      protocolVersion: '2025-06-18',
+                      capabilities: {},
+                      clientInfo: { name: 'example-client', version: '1.0.0' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            '200': {
+              description: 'JSON-RPC response (single or batch).',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      jsonrpc: { type: 'string', enum: ['2.0'] },
+                      id: { oneOf: [{ type: 'string' }, { type: 'number' }, { type: 'null' }] },
+                      result: { type: 'object' },
+                      error: { type: 'object' },
+                    },
+                  },
+                },
+              },
+            },
+            '202': { description: 'Notification accepted — no response body.' },
+            '400': { description: 'Parse or validation error.' },
+            '401': { description: 'Missing/invalid Bearer token.' },
+          },
+        },
+      },
     },
     components: {
       schemas: {

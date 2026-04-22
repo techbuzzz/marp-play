@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
         expiresAt,
         apiKey: auth.key || null,
         apiKeyId: auth.apiKeyId || null,
+        source: 'api',
       },
     })
 

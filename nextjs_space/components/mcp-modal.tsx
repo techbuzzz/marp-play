@@ -127,18 +127,23 @@ export function McpModal({ open, onOpenChange }: McpModalProps) {
 
   const tokenForSnippets = generatedKey?.bearerToken ?? 'YOUR_API_KEY'
 
+  const mcpUrl = `${baseUrl}/api/v1/mcp`
+  const openApiSpec = `${baseUrl}/api/v1/openapi`
+
+  // Claude Desktop / Cline / Cursor — Streamable HTTP MCP transport.
   const claudeConfig = useMemo(
     () => `{
   "mcpServers": {
     "marp-player": {
-      "url": "${baseUrl}/api/v1/openapi",
+      "type": "http",
+      "url": "${mcpUrl}",
       "headers": {
         "Authorization": "Bearer ${tokenForSnippets}"
       }
     }
   }
 }`,
-    [baseUrl, tokenForSnippets],
+    [mcpUrl, tokenForSnippets],
   )
 
   const curlExample = useMemo(
@@ -151,8 +156,6 @@ export function McpModal({ open, onOpenChange }: McpModalProps) {
   }'`,
     [baseUrl, tokenForSnippets],
   )
-
-  const openApiSpec = `${baseUrl}/api/v1/openapi`
 
   async function handleGenerateKey() {
     if (!socialsAcknowledged || generating) return
@@ -222,28 +225,41 @@ export function McpModal({ open, onOpenChange }: McpModalProps) {
             </h3>
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
               The <strong>Model Context Protocol</strong> (MCP) is an open standard that lets AI
-              assistants (Claude, ChatGPT, Gemini, agents, etc.) call external tools. Marp Player
-              exposes an OpenAPI-compliant endpoint that AI agents can use to render Markdown into
-              slide-deck PDFs, create shareable presentations, and manage them programmatically.
+              assistants (Claude, Cursor, Cline, ChatGPT agents, etc.) call external tools. Marp
+              Player exposes two integration paths: a proper <strong>MCP server</strong> over
+              Streamable HTTP for native MCP clients, and an <strong>OpenAPI 3.1</strong> spec for
+              platforms that consume tool definitions that way (OpenAI GPTs, LangChain, etc.).
             </p>
           </section>
 
           {/* Capabilities */}
           <section>
-            <h3 className="text-sm font-semibold mb-2">What AI agents can do</h3>
+            <h3 className="text-sm font-semibold mb-2">MCP tools exposed to the agent</h3>
             <div className="grid sm:grid-cols-2 gap-2">
               {[
-                { title: 'Render PDF', desc: 'POST /api/v1/render-pdf — Markdown → PDF download' },
-                { title: 'Create share link', desc: 'POST /api/v1/play — generate a public URL' },
-                { title: 'Get presentation', desc: 'GET /api/v1/presentations/[id] — fetch metadata' },
-                { title: 'Delete presentation', desc: 'DELETE /api/v1/presentations/[id] — remove' },
+                {
+                  title: 'create_share_link',
+                  desc: 'Store Markdown → return a public play URL',
+                },
+                {
+                  title: 'render_pdf',
+                  desc: 'Markdown → 16:9 PDF (base64 resource)',
+                },
+                {
+                  title: 'get_presentation',
+                  desc: 'Fetch metadata & markdown by id',
+                },
+                {
+                  title: 'delete_presentation',
+                  desc: 'Revoke a shared presentation',
+                },
               ].map((cap) => (
                 <div
                   key={cap.title}
                   className="px-3 py-2 rounded-lg bg-muted/50 border border-border"
                 >
-                  <div className="text-xs sm:text-sm font-medium">{cap.title}</div>
-                  <div className="text-[10px] sm:text-xs text-muted-foreground font-mono mt-0.5">
+                  <div className="text-xs sm:text-sm font-medium font-mono">{cap.title}</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
                     {cap.desc}
                   </div>
                 </div>
@@ -258,15 +274,57 @@ export function McpModal({ open, onOpenChange }: McpModalProps) {
               How to connect
             </h3>
             <ol className="text-xs sm:text-sm text-muted-foreground space-y-1.5 list-decimal list-inside">
-              <li>Generate an API key below (it replaces the placeholder in the snippets).</li>
-              <li>Point your AI agent / MCP client at the OpenAPI spec.</li>
-              <li>Pass the token as <code className="px-1 py-0.5 bg-muted rounded text-[10px] sm:text-xs">Authorization: Bearer &lt;token&gt;</code>.</li>
+              <li>Generate an API key below (replaces the placeholder in the snippets).</li>
+              <li>
+                Point your MCP client at the MCP server URL, or your OpenAPI tool at the
+                spec URL.
+              </li>
+              <li>
+                Pass the token as{' '}
+                <code className="px-1 py-0.5 bg-muted rounded text-[10px] sm:text-xs">
+                  Authorization: Bearer &lt;token&gt;
+                </code>
+                .
+              </li>
             </ol>
           </section>
 
-          {/* OpenAPI URL */}
+          {/* MCP Server URL (the real MCP endpoint) */}
           <section>
-            <h3 className="text-sm font-semibold mb-2">OpenAPI specification</h3>
+            <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+              <Zap className="h-3.5 w-3.5 text-violet-500" />
+              MCP server URL (Streamable HTTP)
+            </h3>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border">
+              <code className="text-[11px] sm:text-xs font-mono text-foreground truncate flex-1">
+                {mcpUrl}
+              </code>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(mcpUrl)
+                    toast.success('MCP URL copied', { duration: 1800 })
+                  } catch {
+                    toast.error('Could not copy')
+                  }
+                }}
+                className="h-7 px-2"
+                title="Copy URL"
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-1.5 leading-relaxed">
+              Use this URL in Claude Desktop, Cursor, Cline or any MCP client that speaks the
+              Streamable HTTP transport (JSON-RPC 2.0 over HTTP POST).
+            </p>
+          </section>
+
+          {/* OpenAPI URL (for GPTs / LangChain) */}
+          <section>
+            <h3 className="text-sm font-semibold mb-2">OpenAPI spec (GPTs / LangChain)</h3>
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border">
               <code className="text-[11px] sm:text-xs font-mono text-foreground truncate flex-1">
                 {openApiSpec}
@@ -301,7 +359,7 @@ export function McpModal({ open, onOpenChange }: McpModalProps) {
 
           {/* Config example */}
           <section>
-            <h3 className="text-sm font-semibold mb-2">Claude / MCP client config</h3>
+            <h3 className="text-sm font-semibold mb-2">Claude Desktop / Cursor / Cline config</h3>
             <CodeBlock code={claudeConfig} language="json" />
           </section>
 

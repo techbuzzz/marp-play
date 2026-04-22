@@ -226,7 +226,9 @@ function HomeInner() {
     setIsSharing(true)
 
     try {
-      const response = await fetch('/api/v1/play', {
+      // Same-origin UI endpoint: no Bearer token needed. Bot/MCP clients must
+      // hit /api/v1/play with an API key instead.
+      const response = await fetch('/api/internal/play', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ markdown, title: 'Shared Presentation' }),

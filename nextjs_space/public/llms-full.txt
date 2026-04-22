@@ -138,16 +138,74 @@ CSS in frontmatter:
 | F | Toggle fullscreen |
 | Escape | Exit fullscreen / Show editor |
 
-## API for AI Agents & Automation (MCP/Tool Integration)
+## API for AI Agents & Automation (MCP + REST)
 
-Marp Player provides a REST API designed for use as tools in AI agents, MCP servers, and automation pipelines.
+Marp Player exposes **two** integration paths:
 
-### Authentication
-- Set `MARP_API_KEYS` environment variable with comma-separated API keys
-- Pass key via `Authorization: Bearer <key>` header
-- If `MARP_API_KEYS` is not set, the API is open (no auth required)
+1. **Native MCP server** at `POST /api/v1/mcp` — JSON-RPC 2.0 over the MCP
+   Streamable HTTP transport. Point Claude Desktop, Cursor, Cline or any other
+   MCP client at this URL.
+2. **REST API** with OpenAPI 3.1 spec at `/api/v1/openapi` — intended for
+   OpenAI GPTs, LangChain, LlamaIndex and other frameworks that consume plain
+   tool definitions.
 
-### Endpoints
+### Authentication (applies to both paths)
+- Generate a Bearer token in the MCP modal of the Marp Player UI
+  (`POST /api/v1/keys` behind the scenes — token shown only once, hashed at rest).
+- Or set `MARP_API_KEYS` (comma-separated list) env var on the server.
+- Pass it as `Authorization: Bearer <token>`.
+- If neither is configured, the API runs in open mode (dev convenience).
+
+### MCP endpoint — POST /api/v1/mcp
+
+Accepts a single JSON-RPC 2.0 message or a batch. Supported methods:
+
+| Method | Purpose |
+| --- | --- |
+| `initialize` | Handshake; returns server info + capabilities |
+| `ping` | Liveness check |
+| `tools/list` | Enumerate tools |
+| `tools/call` | Invoke a tool |
+| `notifications/initialized` | Client acknowledged ready (no response) |
+
+MCP tools exposed:
+
+- `create_share_link({ markdown, title?, expiresInHours? })` → `{ id, playUrl, embedUrl, slideCount, expiresAt }`
+- `render_pdf({ markdown, filename? })` → base64 `resource` content (`application/pdf`)
+- `get_presentation({ id })` → `{ id, title, markdown, slideCount, createdAt, expiresAt }`
+- `delete_presentation({ id })` → confirmation
+
+Minimal Claude Desktop config:
+```json
+{
+  "mcpServers": {
+    "marp-player": {
+      "type": "http",
+      "url": "https://marp-play.techbuzzz.me/api/v1/mcp",
+      "headers": { "Authorization": "Bearer YOUR_API_KEY" }
+    }
+  }
+}
+```
+
+Sample raw handshake (no client library):
+```bash
+curl -X POST https://marp-play.techbuzzz.me/api/v1/mcp \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "initialize",
+    "params": {
+      "protocolVersion": "2025-06-18",
+      "capabilities": {},
+      "clientInfo": { "name": "demo", "version": "1.0.0" }
+    }
+  }'
+```
+
+### REST endpoints
 
 #### POST /api/v1/render-pdf
 Convert Marp Markdown to a high-quality 16:9 landscape PDF.
@@ -200,11 +258,14 @@ API index with all endpoint URLs.
 
 ### Usage with AI Agents
 
-The OpenAPI spec at `/api/v1/openapi` can be used to register Marp Player as a tool in:
-- OpenAI GPTs (Actions)
-- Anthropic Claude (MCP tools)
-- LangChain / LlamaIndex tool definitions
-- Any OpenAPI-compatible agent framework
+Pick the right path for the platform you are wiring up:
+
+| Platform | Integration | URL |
+| --- | --- | --- |
+| Claude Desktop / Cursor / Cline | Native MCP (Streamable HTTP) | `/api/v1/mcp` |
+| OpenAI GPTs (Actions) | OpenAPI 3.1 spec | `/api/v1/openapi` |
+| LangChain / LlamaIndex | OpenAPI 3.1 spec | `/api/v1/openapi` |
+| Custom / CLI | Raw REST | `/api/v1/*` |
 
 Example use cases:
 - "Create a presentation from these meeting notes and give me the link"

@@ -62,33 +62,53 @@ Directives:
 - HTML2PDF API for PDF export
 - Docker support
 
-## API for AI Agents (MCP/Tool Integration)
+## API for AI Agents (MCP + REST)
 
-Marp Player exposes a REST API that AI agents can use as tools:
+Marp Player supports two integration paths.
 
-### POST /api/v1/render-pdf
-Convert Marp Markdown → PDF file.
-- Input: `{ "markdown": "---\nmarp: true\n---\n# Title\n...", "filename": "output.pdf" }`
-- Output: Binary PDF (application/pdf)
+### 1. Native MCP server  — POST /api/v1/mcp
 
-### POST /api/v1/play
-Store Marp Markdown and get a shareable presentation link.
-- Input: `{ "markdown": "...", "title": "My Deck", "expiresInHours": 72 }` (default: 30 days)
-- Output: `{ "playUrl": "https://host/play/abc123", "embedUrl": "...", "slideCount": 10 }`
+JSON-RPC 2.0 over HTTP POST (Model Context Protocol Streamable HTTP transport).
+Use this URL in Claude Desktop, Cursor, Cline or any other MCP client.
+Supported methods: `initialize`, `tools/list`, `tools/call`, `ping`,
+`notifications/initialized` and friends.
 
-### GET /api/v1/presentations/{id}
-Retrieve stored presentation data.
+Tools exposed:
+- `create_share_link`      — store markdown, return a public play URL
+- `render_pdf`             — markdown → 16:9 PDF (returned as base64 resource)
+- `get_presentation`       — fetch metadata & markdown by id
+- `delete_presentation`    — remove a shared presentation
 
-### DELETE /api/v1/presentations/{id}
-Delete a stored presentation.
+Minimal Claude Desktop config:
+```json
+{
+  "mcpServers": {
+    "marp-player": {
+      "type": "http",
+      "url": "https://marp-play.techbuzzz.me/api/v1/mcp",
+      "headers": { "Authorization": "Bearer YOUR_API_KEY" }
+    }
+  }
+}
+```
 
-### OpenAPI Spec: /api/v1/openapi
-Full OpenAPI 3.1 specification for tool registration.
+### 2. REST API (OpenAPI 3.1 for GPTs / LangChain)
 
-Authentication: Optional Bearer token (configure MARP_API_KEYS env var).
+- `POST /api/v1/render-pdf` — Marp markdown → binary PDF
+- `POST /api/v1/play` — store markdown, return `{ playUrl, embedUrl, id }` (default TTL 30 days)
+- `GET  /api/v1/presentations/{id}` — fetch stored presentation
+- `DELETE /api/v1/presentations/{id}` — delete stored presentation
+- `POST /api/v1/keys` — generate a Bearer token (shown only once)
+- `GET  /api/v1/openapi` — full OpenAPI 3.1 spec for tool registration
+- `GET  /api/v1` — discovery index
+
+Authentication: `Authorization: Bearer <token>`. Keys are generated in the MCP
+modal of the Marp Player UI, or via `MARP_API_KEYS` env var. If neither is
+configured the API runs in open mode.
 
 ## Links
 
 - Full documentation: /llms-full.txt
+- MCP endpoint: /api/v1/mcp
 - OpenAPI spec: /api/v1/openapi
 - API index: /api/v1

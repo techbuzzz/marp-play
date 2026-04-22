@@ -41,7 +41,9 @@ It is designed to be **self-hostable in under 5 minutes** (Docker, bare-metal, o
 | **Playback** | Keyboard shortcuts (arrows, space, F for fullscreen), click-to-advance toggle, autoplay with 1–10 s interval, speaker notes panel. |
 | **PDF export** | 1280×720 landscape PDF rendered through a headless Chromium pipeline, one slide per page. |
 | **Sharing** | One-click share modal, URL of the form `/?s=<id>`, viewers land in a clean play-only mode with the editor collapsed. |
-| **MCP / API** | OpenAPI 3.1 spec at `/api/v1/openapi`, DB-backed API keys (SHA-256 hashed), Bearer auth, AI-agent-friendly endpoints for render / share / fetch / delete. |
+| **MCP / API** | Native MCP server at `/api/v1/mcp` (Streamable HTTP, JSON-RPC 2.0) **and** OpenAPI 3.1 spec at `/api/v1/openapi`. DB-backed API keys (SHA-256 hashed), Bearer auth, AI-agent-friendly tools for render / share / fetch / delete. |
+| **Tiered auth** | **UI** uses a same-origin `/api/internal/play` endpoint — no token needed, so the Share button Just Works™. **REST & MCP** require a Bearer token. Every row is stamped with its `source` (`ui` / `api` / `mcp`) so you always know who created it. |
+| **Encryption at rest** | `SharedPresentation.markdown` is transparently AES-256-CBC encrypted via a Prisma Client extension. `enc:` prefix marks encrypted rows so legacy plain-text data stays readable and is upgraded lazily on the next write. |
 | **SEO & LLM-ready** | Rich metadata, structured data (SoftwareApplication / WebApplication / FAQPage), dynamic `robots.txt` + `sitemap.xml`, `llms.txt` + `llms-full.txt`, allow-listed crawlers for GPTBot / ClaudeBot / PerplexityBot. |
 | **Hydration-safe** | Strict SSR/CSR parity — no random/date-based state in render paths. |
 
@@ -193,23 +195,61 @@ WantedBy=multi-user.target
 
 ## 🤖 MCP / REST API
 
-Marp Player exposes an OpenAPI 3.1-compliant surface so any AI agent can render, share and fetch presentations on behalf of its user.
+Marp Player ships **two** integration paths so every agent framework is first-class:
+
+1. **Native MCP server** at `POST /api/v1/mcp` — JSON-RPC 2.0 over the Model Context Protocol **Streamable HTTP** transport. Point Claude Desktop, Cursor, Cline or any other MCP client at this URL.
+2. **REST + OpenAPI 3.1** — for platforms that ingest plain tool definitions (OpenAI GPTs Actions, LangChain, LlamaIndex, n8n, Make, …).
+
+Both share the same Bearer-token auth scheme and the same underlying storage.
 
 ### Base URLs
 
+- **MCP endpoint:** `POST {BASE}/api/v1/mcp`
 - **OpenAPI spec:** `GET {BASE}/api/v1/openapi`
 - **API index:** `GET {BASE}/api/v1`
 - **LLM-friendly docs:** `GET {BASE}/llms-full.txt` · `GET {BASE}/llms.txt`
 
-### Endpoints
+### MCP tools
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `POST` | `/api/v1/keys` | **Generate a Bearer token** (shown once, never retrievable). Requires `acknowledgedSocials: true`. |
-| `POST` | `/api/v1/play` | Store Markdown → return `playUrl` + `embedUrl`. |
-| `POST` | `/api/v1/render-pdf` | Markdown → 16:9 landscape PDF binary. |
-| `GET`  | `/api/v1/presentations/{id}` | Fetch stored deck metadata + markdown. |
-| `DELETE` | `/api/v1/presentations/{id}` | Delete a stored deck. |
+| Tool | Purpose |
+| --- | --- |
+| `create_share_link` | Store Markdown → return a public play URL. |
+| `render_pdf` | Markdown → 16:9 PDF returned as a base64 `resource` content item. |
+| `get_presentation` | Fetch metadata & markdown by id. |
+| `delete_presentation` | Revoke a shared presentation. |
+
+Supported MCP methods: `initialize`, `ping`, `tools/list`, `tools/call`, plus the usual `notifications/*`.
+
+### REST endpoints
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/api/v1/keys` | None (public) | **Generate a Bearer token** (shown once, never retrievable). Requires `acknowledgedSocials: true`. |
+| `POST` | `/api/v1/play` | Bearer | Store Markdown → return `playUrl` + `embedUrl`. Rows stamped `source="api"`. |
+| `POST` | `/api/v1/render-pdf` | Bearer | Markdown → 16:9 landscape PDF binary. |
+| `GET`  | `/api/v1/presentations/{id}` | Bearer | Fetch stored deck metadata + markdown. |
+| `DELETE` | `/api/v1/presentations/{id}` | Bearer | Delete a stored deck. |
+| `POST` | `/api/v1/mcp` | Bearer | MCP Streamable HTTP endpoint (JSON-RPC 2.0). Rows stamped `source="mcp"`. |
+| `GET`  | `/api/v1/openapi` | None | OpenAPI 3.1 spec for non-MCP agents. |
+| `POST` | `/api/internal/play` | Same-origin only | **UI-only** Share endpoint — browser → 201. External callers get 403; they must use `/api/v1/play` with a token. Rows stamped `source="ui"`. |
+
+### Authentication surfaces (UI vs REST vs MCP)
+
+Marp Player separates **human UI traffic** from **programmatic traffic**, because forcing end users to create an API key just to click *Share* would be terrible UX, while letting bots hit the same endpoint without identity would be terrible ops. Three surfaces, one storage:
+
+| Surface | Endpoint | Auth | `source` tag |
+| --- | --- | --- | --- |
+| Web UI **Share** button | `POST /api/internal/play` | Same-origin check (browser `Origin` header must equal deployment origin) | `ui` |
+| REST / OpenAPI clients | `POST /api/v1/play` | Bearer token (DB-backed `AppApiKey` or legacy `MARP_API_KEYS`) | `api` |
+| MCP `create_share_link` | `POST /api/v1/mcp` | Bearer token (same as REST) | `mcp` |
+
+All three paths write to the same `shared_presentations` table. The `source` column lets you audit usage without any JOINs:
+
+```sql
+SELECT source, COUNT(*) FROM shared_presentations GROUP BY source;
+```
+
+The internal endpoint additionally enforces a 256 KiB cap on markdown and a 1-year max expiry — large or long-lived decks must go through `/api/v1/play`, where the caller has an identity to rate-limit.
 
 ### Authentication
 
@@ -264,13 +304,16 @@ Response:
 }
 ```
 
-### Claude / MCP client config
+### Claude Desktop / Cursor / Cline config
+
+Use the native MCP endpoint — `/api/v1/mcp`, **not** the OpenAPI URL:
 
 ```json
 {
   "mcpServers": {
     "marp-player": {
-      "url": "https://marp-play.techbuzzz.me/api/v1/openapi",
+      "type": "http",
+      "url": "https://marp-play.techbuzzz.me/api/v1/mcp",
       "headers": {
         "Authorization": "Bearer mkp_your_full_token_here"
       }
@@ -279,11 +322,85 @@ Response:
 }
 ```
 
+Quick handshake with plain curl (no client library required):
+
+```bash
+curl -X POST https://marp-play.techbuzzz.me/api/v1/mcp \
+  -H "Authorization: Bearer mkp_your_full_token_here" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "initialize",
+    "params": {
+      "protocolVersion": "2025-06-18",
+      "capabilities": {},
+      "clientInfo": { "name": "demo", "version": "1.0.0" }
+    }
+  }'
+```
+
 ### House-keeping
 
 - **Expired decks** are pruned on every `POST /api/v1/play` (default TTL: 30 days, override with `expiresInHours`).
 - **Unused API keys** (no linked presentation, no activity for 30+ days) are pruned by the same code path — no cron required.
 - Keys linked to at least one deck are **never** auto-deleted.
+
+---
+
+## 🔐 Encryption at rest
+
+The `markdown` column of `SharedPresentation` — the only user-supplied field that can legitimately contain sensitive content (tokens pasted into slides, internal product names, customer data) — is **transparently encrypted** via a Prisma Client extension.
+
+### How it works
+
+| Step | What happens |
+| --- | --- |
+| **Write** | `lib/db.ts` extends `PrismaClient` with a `query` hook on `sharedPresentation.{create,createMany,update,updateMany,upsert}`. Before the SQL runs, `encryptField(plaintext)` wraps the value as `enc:<base64-ciphertext>` using AES-256-CBC. |
+| **Read** | On `findUnique` / `findFirst` / `findMany`, the same hook runs `decryptField` on the way out. Callers see plaintext; they never know encryption exists. |
+| **Legacy** | Rows created before encryption was enabled have no `enc:` prefix. `decryptField` detects this and returns the value unchanged — zero-downtime migration. |
+| **Upgrade** | The next `update` on a legacy row silently re-writes it as ciphertext. No background job needed. |
+| **Idempotency** | `encryptField` is a **no-op** on values that already start with `enc:`, so re-saves never double-encrypt. |
+
+### Required environment variables
+
+| Name | Format | Generator |
+| --- | --- | --- |
+| `ENCRYPTION_KEY` | 64 hex chars (32 bytes / 256 bits) | `openssl rand -hex 32` |
+| `ENCRYPTION_VECTOR` | 32 hex chars (16 bytes / 128 bits) | `openssl rand -hex 16` |
+
+Both must be set **before** the app starts. `lib/crypto.ts::validateEnv()` throws a descriptive error at first use if either is missing or malformed.
+
+> ⚠️ **Production checklist.** The keys stored in `nextjs_space/.env` are **for local dev only**. Before deploying, set `ENCRYPTION_KEY` and `ENCRYPTION_VECTOR` via your hosting platform's secret manager (Abacus → *Settings → Environment*, AWS Secrets Manager, Doppler, 1Password Connect, etc.). If you rotate the keys, legacy ciphertext becomes unreadable — see *Key rotation* below.
+
+### Design trade-offs
+
+- **Static IV per row** (not random). Rationale: (a) `markdown` is a large blob so CBC-with-static-IV leaks at most "two rows have identical content", which is acceptable for public-by-design presentations; (b) it keeps the Prisma extension stateless and avoids schema changes. **Do not** reuse this scheme for passwords, tokens, or short secrets — those need per-value IVs or a proper AEAD like AES-GCM.
+- **Scope.** Only `markdown` is encrypted. `title`, `slideCount`, `views`, `apiKey`, `apiKeyId`, `source`, timestamps — all plaintext so you can still index / query them.
+- **Known quirk.** Write operations currently return the **ciphertext** in their result objects (we only decrypt on reads). Every code path in this repo fetches a fresh copy via `findUnique` after a write, so this never leaks. Don't start reading `markdown` off a `create()` return value without first running it through `decryptField`.
+
+### Ops tooling
+
+```bash
+# Unit smoke tests (no DB required)
+yarn tsx --require dotenv/config scripts/test-crypto.ts
+
+# End-to-end round-trip against the real DB
+yarn tsx --require dotenv/config scripts/test-crypto-prisma.ts
+
+# Optional one-shot migration: encrypt all legacy plain-text rows immediately
+# (safe to run repeatedly — idempotent).
+yarn tsx --require dotenv/config scripts/encrypt-markdown-fields.ts
+```
+
+### Key rotation
+
+There is no automatic rotation. The manual recipe:
+
+1. Add `ENCRYPTION_KEY_V2` (new 64-hex value) to the environment; keep the original `ENCRYPTION_KEY`.
+2. In `lib/crypto.ts`, change the prefix constant to `enc:v2:` and add a branch that decrypts the old `enc:` prefix with the original key, the new `enc:v2:` prefix with the new key.
+3. Run `scripts/encrypt-markdown-fields.ts` — because encryption is idempotent under the **current** key/prefix only, it will re-encrypt old rows under v2.
+4. Once `SELECT count(*) FROM shared_presentations WHERE markdown LIKE 'enc:%' AND markdown NOT LIKE 'enc:v2:%' = 0`, retire the old key.
 
 ---
 
@@ -302,13 +419,14 @@ marp_player/
     │   ├── play/[id]/              # Play-only embed route
     │   └── api/
     │       ├── v1/                 # Public AI-agent API
-    │       │   ├── keys/           # NEW: generate API keys
+    │       │   ├── mcp/            # NEW: native MCP server (Streamable HTTP, JSON-RPC 2.0)
+    │       │   ├── keys/           # Generate API keys
     │       │   ├── play/           # Store markdown, return share URL
     │       │   ├── render-pdf/     # Marp → PDF
     │       │   ├── presentations/[id]/
-    │       │   └── openapi/        # OpenAPI 3.1 spec
+    │       │   └── openapi/        # OpenAPI 3.1 spec (for GPTs / LangChain)
     │       ├── config/social/      # LinkedIn + GitHub URLs for the MCP modal
-    │       ├── internal/play/[id]/ # No-auth fetch for the play page
+    │       ├── internal/play/      # NEW: POST (same-origin, UI-only) + [id]/GET (no-auth fetch)
     │       ├── render-marp/        # Server-side Marp rendering (editor live preview)
     │       ├── export-pdf/         # UI-driven PDF export
     │       └── markdown/           # Load examples from public/examples
@@ -321,16 +439,21 @@ marp_player/
     ├── hooks/use-presentation.ts  # Slide state + animations
     ├── lib/
     │   ├── api-auth.ts            # Token generation, hashing, validation, cleanup
+    │   ├── crypto.ts              # NEW: AES-256-CBC encrypt/decrypt for markdown column
+    │   ├── db.ts                  # Prisma singleton + $extends query hook for encryption
     │   ├── animation-presets.ts
     │   ├── animations.css
-    │   ├── markdown-parser.ts
-    │   └── db.ts                  # Prisma singleton
-    ├── prisma/schema.prisma       # SharedPresentation + AppApiKey models
+    │   └── markdown-parser.ts
+    ├── prisma/schema.prisma       # SharedPresentation (+source col) + AppApiKey models
     ├── public/
     │   ├── examples/              # Bundled demo presentations
     │   ├── llms.txt / llms-full.txt
     │   └── screenshots/           # README-ready screenshots
     └── scripts/                   # Maintenance scripts
+        ├── sync_to_github.py            # Push repo to GitHub via Git DB API
+        ├── test-crypto.ts               # Unit smoke tests for lib/crypto.ts
+        ├── test-crypto-prisma.ts        # E2E round-trip against the real DB
+        └── encrypt-markdown-fields.ts   # One-shot legacy-row migration
 ```
 
 ---
@@ -340,11 +463,13 @@ marp_player/
 | Name | Required? | Used by | Description |
 | --- | --- | --- | --- |
 | `DATABASE_URL` | ✅ | Prisma | PostgreSQL connection string. |
+| `ENCRYPTION_KEY` | ✅ | `lib/crypto.ts` → Prisma `$extends` | 64 hex chars (32 bytes). AES-256-CBC key for the `markdown` column. Generate with `openssl rand -hex 32`. **Losing this makes existing rows unreadable.** |
+| `ENCRYPTION_VECTOR` | ✅ | `lib/crypto.ts` → Prisma `$extends` | 32 hex chars (16 bytes). Initialization vector paired with `ENCRYPTION_KEY`. Generate with `openssl rand -hex 16`. |
 | `ABACUSAI_API_KEY` | Optional | `/api/export-pdf`, `/api/v1/render-pdf` | LLM / headless-Chromium gateway for PDF rendering. |
 | `LINKEDIN_PERS_URL` | Optional | MCP modal | LinkedIn profile the user is asked to follow before key generation. |
 | `GITHUB_CURRENT_REPO` | Optional | MCP modal | GitHub repo the user is asked to star/fork before key generation. |
 | `MARP_API_KEYS` | Optional | `lib/api-auth.ts` | Legacy comma-separated Bearer tokens. Kept for backward compatibility. |
-| `GITHUB_TOKEN` | Optional | `.github/workflows/push-to-github.yml` | PAT used by the `workflow_dispatch` job that mirrors the app back to GitHub. |
+| `GITHUB_TOKEN` | Optional | `.github/workflows/push-to-github.yml`, `scripts/sync_to_github.py` | PAT used by the `workflow_dispatch` job and the local sync script that mirror the app back to GitHub. |
 | `NEXTAUTH_URL` | Auto | Next.js runtime | Automatically set at runtime; do **not** hard-code. |
 
 ---
@@ -358,6 +483,8 @@ marp_player/
   <!-- _animateOut: fadeOutRight -->
   ```
 - **API key storage** is intentionally minimal: `keyId` (public) + `sha256(secret)` + optional `label`. We never accept a plain secret back from the DB.
+- **Auth split** is a CSRF pattern, not a security bypass. `/api/internal/play` uses the browser-enforced `Origin` / `Referer` headers (which JavaScript in another tab cannot forge on a cross-origin POST) to cheaply prove the request came from our own page. Every programmatic caller still needs a Bearer token — cross-origin XHR from `evil.com` gets 403, curl with no `Origin` gets 403. See the *Authentication surfaces* table above.
+- **Encryption is opaque to callers.** Routes call `prisma.sharedPresentation.create({ data: { markdown } })` with plaintext; the `$extends` hook does the rest. Adding a new field to the encrypted set = add it to `encryptFields` in `lib/db.ts`. See `lib/crypto.ts` for the primitives.
 - **Cleanup** piggybacks on normal traffic instead of a scheduler. If the app is idle, nothing happens — which is the correct behaviour for a write-on-demand deck store.
 - **LLM indexing**: `llms.txt`, `llms-full.txt`, OpenGraph, JSON-LD, `application/llms+txt` alternate link, and allow-listed GPTBot/ClaudeBot/PerplexityBot in `robots.txt`.
 
@@ -393,6 +520,41 @@ Shared links must be of the shape `/?s=<id>` (on the landing page). The older `/
 
 </details>
 
+<details>
+<summary><b>Clicking <em>Share</em> returns <code>Missing Authorization header</code></b></summary>
+
+You're on an old build that had the UI calling `/api/v1/play` directly. Current builds route the Share button to `/api/internal/play`, which uses a same-origin check instead of a Bearer token. Pull the latest code and rebuild; the only call site that still needs a token is the MCP modal's *Generate API Key* flow.
+
+</details>
+
+<details>
+<summary><b><code>/api/internal/play</code> returns 403 from curl / Postman</b></summary>
+
+That's by design — the endpoint is UI-only. External clients must use `POST /api/v1/play` with a Bearer token (generate one at `POST /api/v1/keys` or in the MCP modal). Browsers set `Origin` automatically, so the in-app Share button just works.
+
+</details>
+
+<details>
+<summary><b>App throws <code>ENCRYPTION_KEY must be 64 hex chars</code> on startup</b></summary>
+
+Generate and add both encryption variables to your environment:
+
+```bash
+echo "ENCRYPTION_KEY=$(openssl rand -hex 32)" >> nextjs_space/.env
+echo "ENCRYPTION_VECTOR=$(openssl rand -hex 16)" >> nextjs_space/.env
+```
+
+In production, set them via your hosting platform's secret manager — **never commit them**. If you rotate the key you'll lose access to existing rows; see *Key rotation* in the Encryption section.
+
+</details>
+
+<details>
+<summary><b>Rows look like <code>enc:abc123…</code> in <code>psql</code> but the app displays them fine</b></summary>
+
+Expected. The column is encrypted at rest; only the Prisma extension in `lib/db.ts` decrypts on read. To inspect plaintext manually, run `yarn tsx --require dotenv/config scripts/test-crypto-prisma.ts` or write a one-off script that uses the shared `prisma` singleton (not raw SQL).
+
+</details>
+
 ---
 
 ## 🧪 Scripts cheatsheet
@@ -407,6 +569,14 @@ yarn start               # run the built server
 yarn prisma generate
 yarn prisma db push      # apply schema to DB
 yarn prisma studio       # visual DB browser
+
+# encryption (see "Encryption at rest" section)
+yarn tsx --require dotenv/config scripts/test-crypto.ts             # unit smoke tests
+yarn tsx --require dotenv/config scripts/test-crypto-prisma.ts      # DB round-trip
+yarn tsx --require dotenv/config scripts/encrypt-markdown-fields.ts # one-shot legacy migration
+
+# mirror the repo to GitHub (requires GITHUB_TOKEN in env)
+python3 scripts/sync_to_github.py
 ```
 
 ---
