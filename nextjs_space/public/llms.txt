@@ -62,6 +62,33 @@ Directives:
 - HTML2PDF API for PDF export
 - Docker support
 
+## API for AI Agents (MCP/Tool Integration)
+
+Marp Player exposes a REST API that AI agents can use as tools:
+
+### POST /api/v1/render-pdf
+Convert Marp Markdown → PDF file.
+- Input: `{ "markdown": "---\nmarp: true\n---\n# Title\n...", "filename": "output.pdf" }`
+- Output: Binary PDF (application/pdf)
+
+### POST /api/v1/play
+Store Marp Markdown and get a shareable presentation link.
+- Input: `{ "markdown": "...", "title": "My Deck", "expiresInHours": 72 }` (default: 30 days)
+- Output: `{ "playUrl": "https://host/play/abc123", "embedUrl": "...", "slideCount": 10 }`
+
+### GET /api/v1/presentations/{id}
+Retrieve stored presentation data.
+
+### DELETE /api/v1/presentations/{id}
+Delete a stored presentation.
+
+### OpenAPI Spec: /api/v1/openapi
+Full OpenAPI 3.1 specification for tool registration.
+
+Authentication: Optional Bearer token (configure MARP_API_KEYS env var).
+
 ## Links
 
-- llms-full.txt: /llms-full.txt
+- Full documentation: /llms-full.txt
+- OpenAPI spec: /api/v1/openapi
+- API index: /api/v1

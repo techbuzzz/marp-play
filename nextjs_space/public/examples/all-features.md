@@ -632,6 +632,104 @@ Add animations to your slides in 3 ways:
 
 ---
 
+<!-- _class: section -->
+<!-- _paginate: false -->
+
+# 🔗 API & MCP Integration
+
+Use Marp Player from any AI agent
+
+---
+
+<!-- _animateIn: fadeInUp -->
+
+## 🤖 REST API for AI Agents
+
+Marp Player exposes **API v1** — a set of endpoints AI agents can call as tools:
+
+<div class="grid-2">
+<div class="card">
+
+### 📄 `POST /api/v1/render-pdf`
+Send Marp Markdown → get a **PDF file** back.
+Perfect for generating reports, decks, and documents.
+
+</div>
+<div class="card">
+
+### 🔗 `POST /api/v1/play`
+Send Marp Markdown → get a **shareable link**.
+The link opens a full-screen interactive viewer.
+
+</div>
+</div>
+
+<div class="grid-2" style="margin-top: 0.5em;">
+<div class="card">
+
+### 📋 `GET /api/v1/presentations/{id}`
+Retrieve saved presentation data and metadata.
+
+</div>
+<div class="card">
+
+### 🗑️ `DELETE /api/v1/presentations/{id}`
+Remove a stored presentation.
+
+</div>
+</div>
+
+---
+
+<!-- _animateIn: fadeInUp -->
+
+## 🛠️ MCP Tool Integration
+
+Register Marp Player as a tool in your AI agent using the **OpenAPI spec**:
+
+```
+GET /api/v1/openapi   → Full OpenAPI 3.1 specification
+GET /api/v1           → API index with all endpoint URLs
+```
+
+### Works with:
+- **OpenAI GPTs** (Actions) — register the OpenAPI spec as an action
+- **Anthropic Claude** (MCP) — use as an MCP tool via OpenAPI
+- **LangChain / LlamaIndex** — import as a tool definition
+- **Any OpenAPI-compatible agent framework**
+
+### 🔐 Authentication
+Optional `Bearer` token via `Authorization` header.
+Configure `MARP_API_KEYS` env variable (comma-separated keys).
+
+---
+
+<!-- _animateIn: fadeInUp -->
+
+## 📡 API Usage Examples
+
+### Create a shareable presentation link:
+```bash
+curl -X POST https://marp-play.techbuzzz.me/api/v1/play \
+  -H "Content-Type: application/json" \
+  -d '{"markdown": "---\nmarp: true\n---\n# Hello!", "title": "Demo"}'
+```
+
+### Generate a PDF:
+```bash
+curl -X POST https://marp-play.techbuzzz.me/api/v1/render-pdf \
+  -H "Content-Type: application/json" \
+  -d '{"markdown": "---\nmarp: true\n---\n# Hello!"}' \
+  -o slides.pdf
+```
+
+### AI agent prompt example:
+> *"Create a 5-slide presentation about our Q2 results and share the link"*
+
+The agent calls `/api/v1/play` → gets a URL → returns it to the user ✨
+
+---
+
 <!-- _class: lead -->
 <!-- _paginate: false -->
 <!-- _animateIn: rollIn -->
@@ -641,4 +739,4 @@ Add animations to your slides in 3 ways:
 You've seen every feature of **Marp Player**
 
 <p style="margin-top: 1em; font-size: 0.9em; color: #64748b;">Built with Next.js · Marp Core · Tailwind CSS · Animate.css</p>
-<p style="font-size: 0.8em; color: #475569;">This slide entered with <code>rollIn</code> animation!</p>
+<p style="font-size: 0.8em; color: #475569;">API docs: <code>/api/v1/openapi</code> · This slide entered with <code>rollIn</code> animation!</p>

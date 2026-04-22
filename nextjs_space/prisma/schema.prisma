@@ -1,9 +1,24 @@
 generator client {
-  provider = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/marp_player/nextjs_space/node_modules/.prisma/client"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model SharedPresentation {
+  id        String   @id @default(cuid())
+  title     String   @default("Untitled Presentation")
+  markdown  String
+  slideCount Int     @default(0)
+  createdAt DateTime @default(now())
+  expiresAt DateTime?
+  views     Int      @default(0)
+  apiKey    String?  // optional: track which API key created it
+
+  @@index([createdAt])
+  @@map("shared_presentations")
 }

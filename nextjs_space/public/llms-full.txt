@@ -138,6 +138,79 @@ CSS in frontmatter:
 | F | Toggle fullscreen |
 | Escape | Exit fullscreen / Show editor |
 
+## API for AI Agents & Automation (MCP/Tool Integration)
+
+Marp Player provides a REST API designed for use as tools in AI agents, MCP servers, and automation pipelines.
+
+### Authentication
+- Set `MARP_API_KEYS` environment variable with comma-separated API keys
+- Pass key via `Authorization: Bearer <key>` header
+- If `MARP_API_KEYS` is not set, the API is open (no auth required)
+
+### Endpoints
+
+#### POST /api/v1/render-pdf
+Convert Marp Markdown to a high-quality 16:9 landscape PDF.
+
+Request:
+```json
+{
+  "markdown": "---\nmarp: true\ntheme: default\npaginate: true\n---\n\n# Title\n\nContent\n\n---\n\n## Slide 2\n\nMore content",
+  "filename": "my-presentation.pdf"
+}
+```
+Response: Binary PDF file (application/pdf)
+
+#### POST /api/v1/play
+Store Marp Markdown and receive a shareable interactive presentation URL.
+
+Request:
+```json
+{
+  "markdown": "---\nmarp: true\n---\n\n# Hello\n\n---\n\n## World",
+  "title": "My Presentation",
+  "expiresInHours": 72  // optional, default: 720 (30 days)
+}
+```
+Response:
+```json
+{
+  "success": true,
+  "id": "clx1234abc",
+  "playUrl": "https://marp-play.techbuzzz.me/play/clx1234abc",
+  "embedUrl": "https://marp-play.techbuzzz.me/play/clx1234abc?embed=true",
+  "title": "My Presentation",
+  "slideCount": 2,
+  "createdAt": "2025-01-01T00:00:00.000Z",
+  "expiresAt": "2025-01-04T00:00:00.000Z"
+}
+```
+
+#### GET /api/v1/presentations/{id}
+Retrieve stored presentation markdown and metadata.
+
+#### DELETE /api/v1/presentations/{id}
+Permanently delete a stored presentation.
+
+#### GET /api/v1/openapi
+Full OpenAPI 3.1 specification for registering these endpoints as tools.
+
+#### GET /api/v1
+API index with all endpoint URLs.
+
+### Usage with AI Agents
+
+The OpenAPI spec at `/api/v1/openapi` can be used to register Marp Player as a tool in:
+- OpenAI GPTs (Actions)
+- Anthropic Claude (MCP tools)
+- LangChain / LlamaIndex tool definitions
+- Any OpenAPI-compatible agent framework
+
+Example use cases:
+- "Create a presentation from these meeting notes and give me the link"
+- "Export this Marp markdown as PDF"
+- "Generate a 10-slide deck about X and share it"
+
 ## Getting Started
 1. Open Marp Player in your browser
 2. Paste Marp Markdown in the editor (left panel)
