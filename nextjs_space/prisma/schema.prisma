@@ -17,8 +17,47 @@ model SharedPresentation {
   createdAt DateTime @default(now())
   expiresAt DateTime?
   views     Int      @default(0)
-  apiKey    String?  // optional: track which API key created it
+
+  // Legacy field: raw key fingerprint (kept for backward compatibility with
+  // MARP_API_KEYS env-var mode). Not used when apiKeyId is set.
+  apiKey    String?
+
+  // New: link to an AppApiKey record (preferred).
+  apiKeyId  String?
+  apiKeyRef AppApiKey? @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
+  @@index([apiKeyId])
   @@map("shared_presentations")
+}
+
+// API keys generated via the in-app MCP modal.
+// Stored design: we keep a public "keyId" (for lookup + FK on
+// SharedPresentation) and only the sha256 of the client-secret portion of the
+// Bearer token, so the token is only visible to the user once at creation
+// time.
+model AppApiKey {
+  id         String   @id @default(cuid())
+  // Public identifier, first half of the Bearer token. Unique, indexed.
+  keyId      String   @unique
+  // sha256(secret) — the secret half of the Bearer token is never stored in
+  // clear.
+  secretHash String
+  // First ~8 chars of the secret, for identifying the key in UIs.
+  secretPrefix String
+  // Optional user-supplied label / description.
+  label      String?
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime?
+  usageCount Int      @default(0)
+  revoked    Boolean  @default(false)
+
+  // User acknowledged the social-support ask (LinkedIn follow + GitHub star).
+  acknowledgedSocials Boolean @default(false)
+
+  presentations SharedPresentation[]
+
+  @@index([createdAt])
+  @@index([lastUsedAt])
+  @@map("app_api_keys")
 }

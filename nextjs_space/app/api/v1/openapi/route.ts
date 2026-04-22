@@ -129,6 +129,63 @@ export async function GET() {
           },
         },
       },
+      '/keys': {
+        post: {
+          operationId: 'createApiKey',
+          summary: 'Generate a new API key',
+          description: 'Creates a new Bearer token for accessing the Marp Player API. The full token is shown once in the response — only the sha256 hash is stored server-side. Requires the caller to acknowledge the social-support ask (LinkedIn follow + GitHub star).',
+          security: [],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  required: ['acknowledgedSocials'],
+                  properties: {
+                    label: {
+                      type: 'string',
+                      description: 'Optional friendly label for the key, max 120 chars.',
+                      example: 'My Claude agent',
+                    },
+                    acknowledgedSocials: {
+                      type: 'boolean',
+                      description: 'Must be true. The user confirms they support the project on LinkedIn + GitHub.',
+                    },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            '201': {
+              description: 'API key created',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      success: { type: 'boolean' },
+                      id: { type: 'string' },
+                      keyId: { type: 'string', description: 'Public identifier stored in DB. Not sensitive.' },
+                      secretPrefix: { type: 'string', description: 'First few chars of the secret portion, for display only.' },
+                      label: { type: 'string', nullable: true },
+                      createdAt: { type: 'string', format: 'date-time' },
+                      bearerToken: { type: 'string', description: 'Full Bearer token (shown only once).' },
+                      clientSecret: { type: 'string', description: 'Secret portion only (shown only once).' },
+                      warning: { type: 'string' },
+                    },
+                  },
+                },
+              },
+            },
+            '400': {
+              description: 'Invalid request (e.g. missing acknowledgedSocials)',
+              content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+            },
+          },
+        },
+      },
       '/presentations/{id}': {
         get: {
           operationId: 'getPresentation',
@@ -205,7 +262,7 @@ export async function GET() {
         bearerAuth: {
           type: 'http',
           scheme: 'bearer',
-          description: 'API key authentication. Set MARP_API_KEYS env var on the server. If not set, API is open.',
+          description: 'API key authentication. Generate a key via POST /api/v1/keys in the MCP modal of the Marp Player UI, or set MARP_API_KEYS env var on the server. If neither is configured, the API runs in open mode.',
         },
       },
     },

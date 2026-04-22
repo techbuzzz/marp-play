@@ -1,14 +1,14 @@
 import { NextRequest } from 'next/server'
 import { headers } from 'next/headers'
 import { prisma } from '@/lib/db'
-import { validateApiKey, apiError, apiSuccess } from '@/lib/api-auth'
+import { validateApiKey, apiError, apiSuccess, cleanupUnusedApiKeys } from '@/lib/api-auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
     // Validate API key
-    const auth = validateApiKey(request)
+    const auth = await validateApiKey(request)
     if (!auth.valid) {
       return apiError(auth.error || 'Unauthorized', 401)
     }
@@ -30,12 +30,17 @@ export async function POST(request: NextRequest) {
       : DEFAULT_EXPIRY_HOURS
     const expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000)
 
-    // Cleanup expired presentations (fire and forget, max 50 at a time)
+    // Cleanup expired presentations (fire and forget)
     prisma.sharedPresentation.deleteMany({
       where: { expiresAt: { lt: new Date() } },
     }).catch(() => {})
 
-    // Store in database
+    // Monthly cleanup of unused API keys (fire and forget). We piggy-back this
+    // on presentation creation since we don't run a scheduler inside the app.
+    cleanupUnusedApiKeys(30).catch(() => {})
+
+    // Store in database, linking to the AppApiKey if the caller authenticated
+    // with one.
     const presentation = await prisma.sharedPresentation.create({
       data: {
         title: title || 'Untitled Presentation',
@@ -43,6 +48,7 @@ export async function POST(request: NextRequest) {
         slideCount,
         expiresAt,
         apiKey: auth.key || null,
+        apiKeyId: auth.apiKeyId || null,
       },
     })
 

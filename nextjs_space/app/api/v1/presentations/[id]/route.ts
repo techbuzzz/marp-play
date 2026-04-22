@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = validateApiKey(request)
+    const auth = await validateApiKey(request)
     if (!auth.valid) {
       return apiError(auth.error || 'Unauthorized', 401)
     }
@@ -49,7 +49,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = validateApiKey(request)
+    const auth = await validateApiKey(request)
     if (!auth.valid) {
       return apiError(auth.error || 'Unauthorized', 401)
     }

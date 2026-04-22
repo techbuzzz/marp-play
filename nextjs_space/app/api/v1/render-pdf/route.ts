@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     // Validate API key
-    const auth = validateApiKey(request)
+    const auth = await validateApiKey(request)
     if (!auth.valid) {
       return apiError(auth.error || 'Unauthorized', 401)
     }

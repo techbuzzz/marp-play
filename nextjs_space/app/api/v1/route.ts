@@ -33,13 +33,18 @@ export async function GET() {
         url: `${baseUrl}/api/v1/presentations/{id}`,
         description: 'Delete a stored presentation',
       },
+      createApiKey: {
+        method: 'POST',
+        url: `${baseUrl}/api/v1/keys`,
+        description: 'Generate a new Bearer token (shown only once). Requires acknowledgedSocials=true in body.',
+      },
       openApiSpec: {
         method: 'GET',
         url: `${baseUrl}/api/v1/openapi`,
         description: 'OpenAPI 3.1 specification for tool integration',
       },
     },
-    authentication: 'Bearer token via Authorization header. Optional if MARP_API_KEYS is not configured.',
+    authentication: 'Bearer token via Authorization header. Generate one via POST /api/v1/keys. Optional if MARP_API_KEYS env is not configured and no DB-backed keys exist.',
     documentation: `${baseUrl}/llms-full.txt`,
   })
 }

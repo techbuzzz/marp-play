@@ -1,7 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Check, Copy, ExternalLink, Code, Zap, BookOpen } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import {
+  Check,
+  Copy,
+  ExternalLink,
+  Code,
+  Zap,
+  BookOpen,
+  Key,
+  Linkedin,
+  Github,
+  Heart,
+  ShieldAlert,
+  Loader2,
+  Eye,
+  EyeOff,
+} from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -10,6 +25,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 
 interface McpModalProps {
@@ -56,36 +72,129 @@ function CodeBlock({ code, language = 'json', label }: CodeBlockProps) {
   )
 }
 
+interface GeneratedKey {
+  keyId: string
+  bearerToken: string
+  createdAt: string
+  label?: string | null
+}
+
 export function McpModal({ open, onOpenChange }: McpModalProps) {
   const [baseUrl, setBaseUrl] = useState('https://marp-play.techbuzzz.me')
+  const [linkedinUrl, setLinkedinUrl] = useState('')
+  const [githubRepoUrl, setGithubRepoUrl] = useState('')
 
-  // Set baseUrl to the current origin on mount / open
+  // API-key generation state
+  const [linkedinAck, setLinkedinAck] = useState(false)
+  const [githubAck, setGithubAck] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [generatedKey, setGeneratedKey] = useState<GeneratedKey | null>(null)
+  const [revealSecret, setRevealSecret] = useState(false)
+  const [savedAck, setSavedAck] = useState(false)
+
+  const socialsAcknowledged = linkedinAck && githubAck
+
+  // Set baseUrl and load social links on open.
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setBaseUrl(window.location.origin)
     }
+    if (!open) return
+    let cancelled = false
+    fetch('/api/config/social')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return
+        setLinkedinUrl(data.linkedinUrl || '')
+        setGithubRepoUrl(data.githubRepoUrl || '')
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
   }, [open])
 
-  const claudeConfig = `{
+  // Reset transient UI state when modal closes.
+  useEffect(() => {
+    if (!open) {
+      setGeneratedKey(null)
+      setRevealSecret(false)
+      setSavedAck(false)
+      setGenerating(false)
+      // Keep linkedinAck/githubAck so user doesn't have to re-tick if they reopen
+    }
+  }, [open])
+
+  const tokenForSnippets = generatedKey?.bearerToken ?? 'YOUR_API_KEY'
+
+  const claudeConfig = useMemo(
+    () => `{
   "mcpServers": {
     "marp-player": {
       "url": "${baseUrl}/api/v1/openapi",
       "headers": {
-        "Authorization": "Bearer YOUR_API_KEY"
+        "Authorization": "Bearer ${tokenForSnippets}"
       }
     }
   }
-}`
+}`,
+    [baseUrl, tokenForSnippets],
+  )
 
-  const curlExample = `curl -X POST ${baseUrl}/api/v1/play \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
+  const curlExample = useMemo(
+    () => `curl -X POST ${baseUrl}/api/v1/play \\
+  -H "Authorization: Bearer ${tokenForSnippets}" \\
   -H "Content-Type: application/json" \\
   -d '{
     "markdown": "# Hello\\n---\\n# World",
     "title": "My Presentation"
-  }'`
+  }'`,
+    [baseUrl, tokenForSnippets],
+  )
 
   const openApiSpec = `${baseUrl}/api/v1/openapi`
+
+  async function handleGenerateKey() {
+    if (!socialsAcknowledged || generating) return
+    setGenerating(true)
+    try {
+      const res = await fetch('/api/v1/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ acknowledgedSocials: true }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data?.bearerToken) {
+        throw new Error(data?.error || `Request failed (${res.status})`)
+      }
+      setGeneratedKey({
+        keyId: data.keyId,
+        bearerToken: data.bearerToken,
+        createdAt: data.createdAt,
+        label: data.label,
+      })
+      setRevealSecret(true)
+      toast.success('API key generated — save it now!', { duration: 4000 })
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not generate key')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  async function handleCopyToken() {
+    if (!generatedKey) return
+    try {
+      await navigator.clipboard.writeText(generatedKey.bearerToken)
+      toast.success('Bearer token copied', { duration: 1800 })
+    } catch {
+      toast.error('Could not copy')
+    }
+  }
+
+  const maskedToken = generatedKey
+    ? `${generatedKey.bearerToken.slice(0, 14)}${'•'.repeat(20)}${generatedKey.bearerToken.slice(-4)}`
+    : ''
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -149,11 +258,9 @@ export function McpModal({ open, onOpenChange }: McpModalProps) {
               How to connect
             </h3>
             <ol className="text-xs sm:text-sm text-muted-foreground space-y-1.5 list-decimal list-inside">
-              <li>
-                Get an API key from your Marp Player admin (env var <code className="px-1 py-0.5 bg-muted rounded text-[10px] sm:text-xs">MARP_API_KEYS</code>).
-              </li>
+              <li>Generate an API key below (it replaces the placeholder in the snippets).</li>
               <li>Point your AI agent / MCP client at the OpenAPI spec.</li>
-              <li>Pass the key as <code className="px-1 py-0.5 bg-muted rounded text-[10px] sm:text-xs">Authorization: Bearer &lt;key&gt;</code>.</li>
+              <li>Pass the token as <code className="px-1 py-0.5 bg-muted rounded text-[10px] sm:text-xs">Authorization: Bearer &lt;token&gt;</code>.</li>
             </ol>
           </section>
 
@@ -204,6 +311,139 @@ export function McpModal({ open, onOpenChange }: McpModalProps) {
             <CodeBlock code={curlExample} language="bash" />
           </section>
 
+          {/* API Key generation */}
+          <section className="rounded-xl border border-violet-200 dark:border-violet-900/60 bg-gradient-to-br from-violet-50 to-blue-50 dark:from-violet-950/30 dark:to-blue-950/30 p-4 sm:p-5">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-9 h-9 rounded-lg bg-white dark:bg-slate-900 border border-violet-200 dark:border-violet-800 flex items-center justify-center shrink-0">
+                <Key className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-semibold">Generate an API key</h3>
+                <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                  Marp Player is a free, open tool. Before we hand out a Bearer token, we kindly
+                  ask you to support the project — it costs you nothing and helps us grow.
+                </p>
+              </div>
+            </div>
+
+            {/* Social support ask */}
+            {!generatedKey && (
+              <div className="space-y-2.5 mb-4">
+                <SocialAskRow
+                  icon={<Linkedin className="h-3.5 w-3.5 text-[#0A66C2]" />}
+                  label="Follow the author on LinkedIn"
+                  url={linkedinUrl}
+                  checked={linkedinAck}
+                  onCheckedChange={setLinkedinAck}
+                  ctaLabel="Open LinkedIn"
+                />
+                <SocialAskRow
+                  icon={<Github className="h-3.5 w-3.5 text-slate-900 dark:text-slate-100" />}
+                  label="Star / fork the repo on GitHub"
+                  url={githubRepoUrl}
+                  checked={githubAck}
+                  onCheckedChange={setGithubAck}
+                  ctaLabel="Open GitHub"
+                />
+                <p className="flex items-center gap-1.5 text-[10px] sm:text-xs text-muted-foreground pt-1">
+                  <Heart className="h-3 w-3 text-rose-500 fill-rose-500" /> Thank you! The button
+                  below unlocks once both boxes are checked.
+                </p>
+              </div>
+            )}
+
+            {/* Generate button (or generated key display) */}
+            {!generatedKey ? (
+              <Button
+                onClick={handleGenerateKey}
+                disabled={!socialsAcknowledged || generating}
+                className="w-full h-9 gap-2 bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Key className="h-4 w-4" />
+                    Generate API Key
+                  </>
+                )}
+              </Button>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-start gap-2 p-3 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40">
+                  <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="text-[11px] sm:text-xs text-amber-900 dark:text-amber-200 leading-relaxed">
+                    <strong>Save this token now.</strong> It is shown only once — we store only a
+                    sha256 hash and cannot display it again. If you lose it, just generate a new
+                    one.
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-[11px] text-muted-foreground mb-1 font-medium">
+                    Bearer token {generatedKey.keyId ? <span className="font-mono text-[10px]">({generatedKey.keyId})</span> : null}
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-950 border border-slate-800">
+                    <code className="text-[11px] sm:text-xs font-mono text-emerald-300 truncate flex-1">
+                      {revealSecret ? generatedKey.bearerToken : maskedToken}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setRevealSecret((v) => !v)}
+                      className="h-7 px-2 text-slate-300 hover:text-white hover:bg-slate-800"
+                      title={revealSecret ? 'Hide' : 'Reveal'}
+                    >
+                      {revealSecret ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCopyToken}
+                      className="h-7 px-2 text-slate-300 hover:text-white hover:bg-slate-800"
+                      title="Copy token"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+
+                <label className="flex items-start gap-2 text-[11px] sm:text-xs text-muted-foreground cursor-pointer">
+                  <Checkbox
+                    checked={savedAck}
+                    onCheckedChange={(v) => setSavedAck(v === true)}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    I have saved the Bearer token in a secure place. I understand it cannot be
+                    recovered later.
+                  </span>
+                </label>
+
+                <Button
+                  onClick={() => {
+                    setGeneratedKey(null)
+                    setRevealSecret(false)
+                    setSavedAck(false)
+                  }}
+                  disabled={!savedAck}
+                  variant="outline"
+                  className="w-full h-8 text-xs"
+                >
+                  Done — generate another
+                </Button>
+              </div>
+            )}
+
+            <p className="text-[10px] text-muted-foreground/80 mt-3 leading-relaxed">
+              Unused API keys that never create a presentation are automatically purged after ~30
+              days of inactivity to keep the database lean.
+            </p>
+          </section>
+
           {/* Footer links */}
           <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
             <Button
@@ -237,5 +477,46 @@ export function McpModal({ open, onOpenChange }: McpModalProps) {
         </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+interface SocialAskRowProps {
+  icon: React.ReactNode
+  label: string
+  url: string
+  checked: boolean
+  onCheckedChange: (v: boolean) => void
+  ctaLabel: string
+}
+
+function SocialAskRow({ icon, label, url, checked, onCheckedChange, ctaLabel }: SocialAskRowProps) {
+  return (
+    <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white/70 dark:bg-slate-900/60 border border-border">
+      <Checkbox
+        checked={checked}
+        onCheckedChange={(v) => onCheckedChange(v === true)}
+        className="shrink-0"
+        id={`social-${label}`}
+      />
+      <label
+        htmlFor={`social-${label}`}
+        className="flex items-center gap-1.5 text-[11px] sm:text-xs font-medium flex-1 cursor-pointer"
+      >
+        {icon}
+        {label}
+      </label>
+      {url ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => window.open(url, '_blank', 'noopener,noreferrer')}
+          className="h-7 px-2 text-[10px] sm:text-xs gap-1"
+          title={url}
+        >
+          {ctaLabel}
+          <ExternalLink className="h-3 w-3" />
+        </Button>
+      ) : null}
+    </div>
   )
 }
