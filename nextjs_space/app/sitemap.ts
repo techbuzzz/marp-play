@@ -10,6 +10,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const siteUrl = `${protocol}://${host}`
 
   return [
+     {
+      url: "https://techbuzzz.me",
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 1.0,
+    },
     {
       url: siteUrl,
       lastModified: new Date(),
