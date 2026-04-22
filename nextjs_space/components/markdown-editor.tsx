@@ -80,18 +80,17 @@ export function MarkdownEditor({ value, onChange }: MarkdownEditorProps) {
 
   const handleSaveFile = () => {
     try {
-      const data = {
-        markdown: value,
-        exportedAt: new Date().toISOString(),
-      }
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      // Save raw Markdown so the file round-trips with Load (.md) and works in
+      // any Marp-compatible editor (VS Code Marp, marp-cli, GitHub preview).
+      // Legacy JSON bundles are still accepted by Load for back-compat.
+      const blob = new Blob([value], { type: 'text/markdown;charset=utf-8' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `presentation-${Date.now()}.json`
+      a.download = `presentation-${Date.now()}.md`
       a.click()
       URL.revokeObjectURL(url)
-      toast.success('Presentation saved')
+      toast.success('Presentation saved as .md')
     } catch (error) {
       console.error('Error saving file:', error)
       toast.error('Failed to save file')

@@ -35,7 +35,7 @@ It is designed to be **self-hostable in under 5 minutes** (Docker, bare-metal, o
 
 | Area | What you get |
 | --- | --- |
-| **Live editor** | Full Marp syntax (frontmatter, directives, themes, custom CSS, HTML), server-side rendering via `@marp-team/marp-core`, sub-second refresh with debouncing. `New` / `Load` / `Save` buttons let you reset, import (`.md` / `.markdown` / `.txt` / `.json`) or export the current deck — `New` asks for confirmation when the editor has unsaved content. |
+| **Live editor** | Full Marp syntax (frontmatter, directives, themes, custom CSS, HTML), server-side rendering via `@marp-team/marp-core`, sub-second refresh with debouncing. `New` / `Load` / `Save` buttons let you reset, import (`.md` / `.markdown` / `.txt` / `.json`) or export the current deck as a plain `.md` file (Marp-compatible, round-trips with Load) — `New` asks for confirmation when the editor has unsaved content. |
 | **Themes** | 4 built-in themes (Modern / Minimal / Dark / Light) plus anything you ship in Marp CSS. |
 | **Animations** | 38 Animate.css transitions, 5 presets (None / Fade / Bounce / Slide / Flip) and a **Per-slide** mode driven by `<!-- _animateIn: fadeInUp -->` directives. |
 | **Playback** | Keyboard shortcuts (arrows, space, F for fullscreen), click-to-advance toggle, autoplay with 1–10 s interval, speaker notes panel. |
