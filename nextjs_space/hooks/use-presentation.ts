@@ -46,7 +46,7 @@ export function usePresentation() {
         const response = await fetch('/api/render-marp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ markdown }),
+          body: JSON.stringify({ markdown, theme }),
           signal: abortRef.current.signal,
         })
 
@@ -82,7 +82,7 @@ export function usePresentation() {
         clearTimeout(debounceRef.current)
       }
     }
-  }, [markdown])
+  }, [markdown, theme])
 
   const getCurrentSlide = useCallback(() => {
     if (presentation?.slides?.[currentSlide - 1]) {

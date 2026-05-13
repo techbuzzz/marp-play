@@ -10,10 +10,10 @@ import {
 } from '@/components/ui/select'
 
 const THEMES = [
-  { value: 'modern', label: 'Modern' },
-  { value: 'minimal', label: 'Minimal' },
+  { value: 'modern', label: 'Default' },
+  { value: 'minimal', label: 'Uncover' },
   { value: 'dark', label: 'Dark' },
-  { value: 'light', label: 'Light' },
+  { value: 'light', label: 'Gaia' },
 ]
 
 interface ThemeSelectorProps {

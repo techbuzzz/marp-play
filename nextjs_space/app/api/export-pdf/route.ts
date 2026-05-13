@@ -2,13 +2,44 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
 
+/**
+ * Maps UI theme names to Marp theme directives — same mapping used by
+ * /api/render-marp.  Kept inline here to avoid cross-module import issues
+ * inside a Route Handler that uses dynamic imports.
+ */
+const THEME_MAP: Record<string, { theme: string; className?: string }> = {
+  modern:  { theme: 'default' },
+  minimal: { theme: 'uncover' },
+  dark:    { theme: 'gaia', className: 'invert' },
+  light:   { theme: 'gaia' },
+}
+
+function injectThemeDirective(md: string, uiTheme: string): string {
+  const mapping = THEME_MAP[uiTheme]
+  if (!mapping) return md
+  const trimmed = md.trimStart()
+  if (/^---\s*\n[\s\S]*?\ntheme\s*:/m.test(trimmed) || /<!--\s*theme\s*:/i.test(trimmed)) {
+    return md
+  }
+  let yamlLines = `theme: ${mapping.theme}`
+  if (mapping.className) yamlLines += `\nclass: ${mapping.className}`
+  const fmMatch = trimmed.match(/^(---\s*\n)([\s\S]*?\n)(---\s*(?:\n|$))/)
+  if (fmMatch) {
+    const [, open, body, close] = fmMatch
+    return open + body + yamlLines + '\n' + close + trimmed.slice(fmMatch[0].length)
+  }
+  return `---\nmarp: true\n${yamlLines}\n---\n${md}`
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { markdown } = await request.json()
+    const { markdown, theme: uiTheme } = await request.json()
 
     if (!markdown || typeof markdown !== 'string' || !markdown.trim()) {
       return NextResponse.json({ error: 'No markdown provided' }, { status: 400 })
     }
+
+    const themedMarkdown = injectThemeDirective(markdown, uiTheme || 'modern')
 
     // Step 1: Render markdown with Marp to get HTML + CSS
     const { Marp } = await import('@marp-team/marp-core')
@@ -17,7 +48,7 @@ export async function POST(request: NextRequest) {
       script: false,
     })
 
-    const { html, css } = marp.render(markdown)
+    const { html, css } = marp.render(themedMarkdown)
 
     // Build a full HTML document with all slides for PDF
     // Each slide on its own page using CSS page breaks

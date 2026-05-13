@@ -190,6 +190,42 @@
   max-height: 100%;
 }
 
+/*
+ * Bug fix: ensure table cells, rows, and other text elements inside Marp slides
+ * have proper foreground colour contrast.
+ *
+ * Marp themes (especially Gaia + `invert`) paint `<th>` backgrounds with the
+ * section's foreground colour, so naïvely doing `color: inherit` would give
+ * headers the *same* colour for both text and background → invisible text.
+ *
+ * Strategy:
+ * - `<td>` and other table elements inherit `color` from the section (works
+ *   because their bg is either transparent or the section's bg).
+ * - `<th>` cells get the section's *background* colour as their text colour,
+ *   because Marp paints `<th>` backgrounds with the section's *foreground*
+ *   colour — so section-bg as text ↔ section-fg as bg always contrasts.
+ */
+.marp-slide-wrapper .marpit section table,
+.marp-slide-wrapper .marpit section table td,
+.marp-slide-wrapper .marpit section table tr,
+.marp-slide-wrapper .marpit section table thead,
+.marp-slide-wrapper .marpit section table tbody {
+  color: inherit;
+}
+
+/* <th> cells: use section's background colour as text colour so it contrasts
+   with Marp's "foreground as header bg" convention. */
+.marp-slide-wrapper .marpit section table th {
+  color: var(--color-background, inherit);
+}
+
+/* Ensure borders on table elements also follow the theme foreground color */
+.marp-slide-wrapper .marpit section table th,
+.marp-slide-wrapper .marpit section table td {
+  border-color: currentColor;
+  border-color: color-mix(in srgb, currentColor 30%, transparent);
+}
+
 /* Modern Component Styles */
 @layer components {
   /* Button Styles */

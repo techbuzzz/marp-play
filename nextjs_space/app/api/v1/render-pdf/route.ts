@@ -12,16 +12,39 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { markdown, filename } = body
+    const { markdown, filename, theme: uiTheme } = body
 
     if (!markdown || typeof markdown !== 'string' || !markdown.trim()) {
       return apiError('Field "markdown" is required and must be a non-empty string')
     }
 
+    // Inject theme directive if a UI theme was specified and user markdown
+    // doesn't already declare one.
+    const THEME_MAP: Record<string, { theme: string; className?: string }> = {
+      modern: { theme: 'default' }, minimal: { theme: 'uncover' },
+      dark: { theme: 'gaia', className: 'invert' }, light: { theme: 'gaia' },
+    }
+    let themedMarkdown = markdown
+    if (uiTheme && THEME_MAP[uiTheme]) {
+      const trimmed = markdown.trimStart()
+      if (!/^---\s*\n[\s\S]*?\ntheme\s*:/m.test(trimmed) && !/<!--\s*theme\s*:/i.test(trimmed)) {
+        const m = THEME_MAP[uiTheme]
+        let yamlLines = `theme: ${m.theme}`
+        if (m.className) yamlLines += `\nclass: ${m.className}`
+        const fmMatch = trimmed.match(/^(---\s*\n)([\s\S]*?\n)(---\s*(?:\n|$))/)
+        if (fmMatch) {
+          const [, open, body, close] = fmMatch
+          themedMarkdown = open + body + yamlLines + '\n' + close + trimmed.slice(fmMatch[0].length)
+        } else {
+          themedMarkdown = `---\nmarp: true\n${yamlLines}\n---\n${markdown}`
+        }
+      }
+    }
+
     // Render with Marp
     const { Marp } = await import('@marp-team/marp-core')
     const marp = new Marp({ html: true, script: false })
-    const { html, css } = marp.render(markdown)
+    const { html, css } = marp.render(themedMarkdown)
 
     const fullHtml = `<!DOCTYPE html>
 <html>
