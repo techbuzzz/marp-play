@@ -1,242 +1,225 @@
 ---
 marp: true
-theme: default
-author: Marp Player Team
-footer: Marp Player · All Features Demo · 2026
+author: Your Name
+footer: Brand Deck · 2026
 size: 16:9
 paginate: true
-title: Marp Player — All Features Demo
-description: A comprehensive example showcasing every Marp Player feature
+title: Brand Deck — Starter Template
+description: A theme-ready starter template with brand colors, cards and grids
 style: |
+  /* ──────────────────────────────────────────────
+     BRAND TOKENS — edit these to match your brand
+     ────────────────────────────────────────────── */
   :root {
     --brand: #6366f1;
     --brand-light: #818cf8;
+    --brand-dark: #4338ca;
     --accent: #f59e0b;
-    --bg-dark: #0f172a;
-    --text-light: #f1f5f9;
+    --success: #22c55e;
   }
 
-  /* Title slide */
-  section.lead {
-    background: linear-gradient(135deg, var(--bg-dark) 0%, #1e293b 50%, #0f172a 100%);
-    color: var(--text-light);
+  /*
+   * TIP: this file intentionally has no `theme:` directive so that
+   * the theme selector (Default / Uncover / Dark / Gaia) in the
+   * toolbar takes effect.  Switch themes and see the deck adapt!
+   */
+
+  /* ── Section Dividers ─────────────────────────── */
+  section.divider {
+    background: linear-gradient(135deg, var(--brand) 0%, #7c3aed 100%);
+    color: white;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
     text-align: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
   }
-  section.lead h1 {
+  section.divider h1 { font-size: 3em; color: white; margin-bottom: 0.2em; }
+  section.divider p  { font-size: 1.4em; opacity: 0.85; }
+
+  /* ── Hero / Lead ──────────────────────────────── */
+  section.hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    color: #f1f5f9;
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    text-align: center;
+  }
+  section.hero h1 {
     font-size: 3.2em;
     background: linear-gradient(135deg, var(--brand-light), var(--accent));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
     margin-bottom: 0.3em;
   }
-  section.lead p {
-    font-size: 1.3em;
-    color: #94a3b8;
-  }
+  section.hero p { font-size: 1.2em; color: #94a3b8; }
 
-  /* Section dividers */
-  section.section {
-    background: linear-gradient(135deg, var(--brand) 0%, #7c3aed 100%);
-    color: white;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-  }
-  section.section h1 {
-    font-size: 3em;
-    margin-bottom: 0.3em;
-  }
-  section.section p {
-    font-size: 1.4em;
-    opacity: 0.85;
-  }
-
-  /* Dark slide */
-  section.dark {
-    background: var(--bg-dark);
-    color: var(--text-light);
-  }
-  section.dark h1, section.dark h2 {
-    color: var(--brand-light);
-  }
-
-  /* Standard enhancements */
-  h1 { color: var(--brand); font-size: 2.2em; }
-  h2 { color: #4f46e5; font-size: 1.6em; }
-  h3 { color: #6366f1; }
+  /* ── General typography overrides ─────────────── */
+  h1 { color: var(--brand); }
+  h2 { color: var(--brand-dark); }
+  h3 { color: var(--brand); }
   strong { color: var(--brand); }
-  code { background: #eef2ff; color: #4338ca; padding: 2px 8px; border-radius: 4px; font-size: 0.9em; }
-  blockquote { border-left: 4px solid var(--brand); background: #eef2ff; padding: 16px 24px; border-radius: 0 8px 8px 0; font-style: italic; color: #4f46e5; }
-  a { color: var(--brand); }
-  table { width: 100%; border-collapse: collapse; }
-  th { background: var(--brand); color: white; padding: 12px 16px; text-align: left; }
-  td { padding: 10px 16px; border-bottom: 1px solid #e2e8f0; }
-  tr:nth-child(even) { background: #f8fafc; }
-  img { border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
-
-  /* Grid layouts */
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
-
-  /* Card component */
-  .card {
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  a  { color: var(--brand); }
+  code {
+    background: #eef2ff; color: var(--brand-dark);
+    padding: 2px 8px; border-radius: 4px; font-size: 0.9em;
   }
-  .card h3 { margin-top: 0; font-size: 1.2em; }
+  blockquote {
+    border-left: 4px solid var(--brand);
+    background: #eef2ff; padding: 16px 24px;
+    border-radius: 0 8px 8px 0; font-style: italic;
+    color: var(--brand-dark);
+  }
 
-  /* Badge / pill */
+  /* ── Tables — theme-adaptive ─────────────────── */
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    background: var(--brand); color: white;
+    padding: 12px 16px; text-align: left;
+  }
+  td { padding: 10px 16px; border-bottom: 1px solid #e2e8f0; }
+  tr:nth-child(even) { background: rgba(99, 102, 241, 0.06); }
+
+  /* ── Grid helpers ─────────────────────────────── */
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  /* ── Card ─────────────────────────────────────── */
+  .card {
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(99, 102, 241, 0.15);
+    border-radius: 12px; padding: 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .card h3 { margin-top: 0; font-size: 1.15em; }
+
+  /* ── KPI block ────────────────────────────────── */
+  .kpi {
+    text-align: center; padding: 20px;
+    background: linear-gradient(135deg, #eef2ff, #faf5ff);
+    border-radius: 12px; border: 1px solid #e0e7ff;
+  }
+  .kpi .num  { font-size: 2.6em; font-weight: 800; color: var(--brand); line-height: 1.1; }
+  .kpi .lbl  { font-size: 0.9em; color: #64748b; margin-top: 4px; }
+
+  /* ── Pill / badge ─────────────────────────────── */
   .pill {
     display: inline-block;
     background: linear-gradient(135deg, var(--brand), #7c3aed);
-    color: white;
-    padding: 4px 14px;
-    border-radius: 999px;
-    font-size: 0.8em;
-    font-weight: 600;
+    color: white; padding: 4px 14px;
+    border-radius: 999px; font-size: 0.8em; font-weight: 600;
   }
 
-  /* KPI block */
-  .kpi {
-    text-align: center;
-    padding: 20px;
-    background: linear-gradient(135deg, #eef2ff, #faf5ff);
-    border-radius: 12px;
-    border: 1px solid #e0e7ff;
-  }
-  .kpi .number { font-size: 2.5em; font-weight: 800; color: var(--brand); line-height: 1.2; }
-  .kpi .label { font-size: 0.9em; color: #64748b; margin-top: 4px; }
-
-  /* Highlight box */
-  .highlight {
+  /* ── Highlight / callout ──────────────────────── */
+  .hi {
     background: linear-gradient(135deg, #fef3c7, #fde68a);
-    border: 1px solid #fbbf24;
-    border-radius: 12px;
-    padding: 20px 24px;
-    color: #92400e;
+    border: 1px solid #fbbf24; border-radius: 12px;
+    padding: 20px 24px; color: #92400e;
   }
 
-  /* Steps */
-  .step {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-    margin-bottom: 16px;
-  }
-  .step-num {
+  /* ── Steps ────────────────────────────────────── */
+  .step { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
+  .step-n {
     width: 36px; height: 36px;
-    background: var(--brand);
-    color: white;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 1.1em;
-    flex-shrink: 0;
+    background: var(--brand); color: white;
+    border-radius: 50%; display: flex;
+    align-items: center; justify-content: center;
+    font-weight: 700; font-size: 1.1em; flex-shrink: 0;
   }
 ---
 
-<!-- _class: lead -->
+<!-- _class: hero -->
 <!-- _paginate: false -->
 
-# Marp Player
+# Brand Deck
 
-All Features Demo Presentation
+A starter template with brand colors, cards and grids
 
-<p style="margin-top: 1em; font-size: 0.9em; color: #64748b;">Use ← → arrows, click slides, or press Space to navigate</p>
-
----
-
-<!-- _class: section -->
-
-# 📝 Basic Formatting
-
-Markdown essentials in Marp
+<p style="margin-top:1em; font-size:0.85em; color:#64748b">Switch themes with the 🎨 selector in the toolbar ↓</p>
 
 ---
 
-## Text Formatting
+<!-- _class: divider -->
 
-Marp supports all standard **Markdown** formatting:
+# 📋 The Basics
 
-- **Bold text** for emphasis
-- *Italic text* for subtle highlights
-- ~~Strikethrough~~ for corrections
-- `inline code` for technical terms
-- [Hyperlinks](https://marp.app/) work naturally
-
-> "Simplicity is the ultimate sophistication."
-> — Leonardo da Vinci
-
-You can combine them: ***bold italic***, **`bold code`**, ~~*deleted italic*~~
+Formatting that works in every theme
 
 ---
 
-## Lists & Structure
+## Text & Lists
 
-<div class="grid-2">
+<div class="g2">
 <div>
 
-### Unordered List
-- First item
-  - Nested item A
-  - Nested item B
-- Second item
-- Third item
-  - Deep nesting
-    - Even deeper
+### Inline formatting
+
+- **Bold** for emphasis
+- *Italic* for nuance
+- ~~Strikethrough~~ for edits
+- `inline code` for tech terms
+- [Hyperlinks](https://marp.app/) built-in
+
+> "Good design is obvious. Great design is transparent."
 
 </div>
 <div>
 
-### Ordered List
-1. Step one
-2. Step two
-3. Step three
-   1. Sub-step 3a
-   2. Sub-step 3b
-4. Step four
+### Ordered steps
+
+1. Edit the Markdown on the left
+2. Watch the preview on the right
+3. Pick a **theme** from the dropdown
+4. Add **animations** with the ✨ selector
+5. Hit **Share** or export to **PDF**
 
 </div>
 </div>
 
 ---
 
-<!-- _class: section -->
+## Data Table
 
-# 🎨 Custom CSS Styles
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Theme selector | ✅ Ready | Default · Uncover · Dark · Gaia |
+| PDF export | ✅ Ready | One slide per page, 16 : 9 |
+| Slide animations | ✅ Ready | 38 transitions + per-slide |
+| MCP integration | ✅ Ready | Native JSON-RPC server |
+| Brand CSS | ✅ Ready | Edit `--brand` to change palette |
 
-Cards, grids, pills and more
+<p style="margin-top:0.5em; font-size:0.85em; color:#64748b">
+💡 Table header and text colors auto-adapt to the active theme.
+</p>
 
 ---
 
-## Cards Layout
+<!-- _class: divider -->
 
-<div class="grid-3">
+# 🎨 Cards & Grids
+
+Reusable components for any deck
+
+---
+
+## Three-Column Cards
+
+<div class="g3">
 <div class="card">
 
 ### 🚀 Performance
-Optimized server-side rendering with Marp Core for instant results.
+Server-side Marp Core renders your slides in milliseconds.
 
 </div>
 <div class="card">
 
 ### 🎯 Accuracy
-Full Marp syntax support including frontmatter, directives, and themes.
+Full Marp syntax — directives, frontmatter, custom CSS.
 
 </div>
 <div class="card">
 
 ### 💡 Simplicity
-Just paste Markdown and get a beautiful presentation instantly.
+Paste Markdown → see beautiful slides. Nothing to install.
 
 </div>
 </div>
@@ -245,187 +228,112 @@ Just paste Markdown and get a beautiful presentation instantly.
 
 ## KPI Dashboard
 
-<div class="grid-3">
+<div class="g3">
 <div class="kpi">
-<div class="number">25</div>
-<div class="label">Slides in this demo</div>
+<div class="num">4</div>
+<div class="lbl">Built-in themes</div>
 </div>
 <div class="kpi">
-<div class="number">100%</div>
-<div class="label">Marp Compatible</div>
+<div class="num">38</div>
+<div class="lbl">Animations</div>
 </div>
 <div class="kpi">
-<div class="number">∞</div>
-<div class="label">Possibilities</div>
+<div class="num">∞</div>
+<div class="lbl">Possibilities</div>
 </div>
 </div>
 
-<div style="margin-top: 24px;">
+<div style="margin-top: 20px;">
 
-<span class="pill">Server-side Rendering</span> <span class="pill">SVG Output</span> <span class="pill">Custom CSS</span> <span class="pill">PDF Export</span> <span class="pill">Animations</span>
+<span class="pill">Default</span> <span class="pill">Uncover</span> <span class="pill">Dark</span> <span class="pill">Gaia</span> <span class="pill">PDF</span> <span class="pill">Animations</span> <span class="pill">MCP</span>
 
 </div>
 
 ---
 
-<!-- _class: section -->
+## Two-Column Layout with Callout
 
-# 📊 Data & Tables
+<div class="g2">
+<div>
 
-Structured content in Marp
+### How to customise
+
+<div class="step">
+<div class="step-n">1</div>
+<div>Change <code>--brand</code> in the CSS to your colour</div>
+</div>
+
+<div class="step">
+<div class="step-n">2</div>
+<div>Replace content — keep the <code>.card</code> / <code>.kpi</code> classes</div>
+</div>
+
+<div class="step">
+<div class="step-n">3</div>
+<div>Pick a theme with the 🎨 dropdown</div>
+</div>
+
+</div>
+<div>
+
+<div class="hi">
+
+⚡ **Pro tip** — this deck has **no** `theme:` directive in its frontmatter. That's on purpose: it lets the toolbar theme selector (Default / Uncover / Dark / Gaia) take full control. If you want to lock a theme, add `theme: gaia` to the YAML block.
+
+</div>
+
+</div>
+</div>
 
 ---
 
-## Features Table
-
-| Feature | Status | Description |
-|---------|--------|-------------|
-| Marp Core Rendering | ✅ Ready | Server-side SVG rendering |
-| PDF Export | ✅ Ready | Full-page landscape PDF |
-| Click to Advance | ✅ Ready | Toggle in toolbar |
-| Auto-play | ✅ Ready | 1s–10s intervals |
-| Mobile Layout | ✅ Ready | Stacked responsive design |
-| Speaker Notes | ✅ Ready | Collapsible panel |
-| **Slide Animations** | ✅ **New!** | Fade, Bounce, Slide, Flip + custom per-slide |
-| Fullscreen Mode | ✅ Ready | Press F or button |
-
----
-
-<!-- _class: section -->
+<!-- _class: divider -->
 <!-- _animateIn: bounceIn -->
 
-# ✨ Slide Animations
+# ✨ Animations
 
-New feature: transition effects between slides!
-
----
-
-## Animation Presets
-
-Select an animation preset from the **✨ sparkle dropdown** in the toolbar:
-
-<div class="grid-2">
-<div class="card">
-
-### Built-in Presets
-| Preset | Enter | Exit |
-|--------|-------|------|
-| ⏹ None | — | — |
-| 🌫 Fade | fadeIn | fadeOut |
-| 🏀 Bounce | bounceInLeft | bounceOutRight |
-| ➡️ Slide | slideInRight | slideOutLeft |
-| 🔄 Flip | flipInY | flipOutY |
-| ✨ Per-slide | Custom per slide | Custom per slide |
-
-</div>
-<div class="card">
-
-### How it works
-1. Choose a **preset** from dropdown
-2. All slides use that transition
-3. Or choose **✨ Per-slide** mode
-4. Set custom animations per slide
-5. Animations play on every navigation
-
-</div>
-</div>
+Slide transitions in Markdown
 
 ---
 
-## Per-Slide Animations in Markdown
+<!-- _animateIn: fadeInUp -->
+<!-- _animateOut: fadeOutDown -->
 
-The killer feature: **specify animations directly in your Markdown!**
+## Animation Quick-Start
 
-Use HTML comments to set custom In/Out animations per slide:
+Add comments **above** a slide to set its transition:
 
 ```markdown
-<!-- _animateIn: bounceInLeft -->
-<!-- _animateOut: fadeOut -->
+<!-- _animateIn: fadeInUp -->
+<!-- _animateOut: fadeOutDown -->
 
 ## My Slide
-Content here...
+Content here …
 ```
 
-<div class="highlight">
+<div class="g2">
+<div class="card">
 
-⚡ **How it works:** Animation directives in comments override the global preset. Choose ✨ Per-slide mode for full control, or let per-slide directives override any active preset!
+### Global presets
+Pick from the ✨ dropdown: **None · Fade · Bounce · Slide · Flip · Per-slide**
 
 </div>
+<div class="card">
 
----
+### Per-slide override
+`_animateIn` / `_animateOut` comments override the global preset on that slide.
 
-<!-- _animateIn: fadeInUp -->
-<!-- _animateOut: fadeOutDown -->
-
-## This Slide Uses Custom Animations!
-
-This slide has `fadeInUp` enter and `fadeOutDown` exit — defined right in the Markdown:
-
-```markdown
-<!-- _animateIn: fadeInUp -->
-<!-- _animateOut: fadeOutDown -->
-
-## This Slide Uses Custom Animations!
-```
-
-👉 **Try it:** Select ✨ **Per-slide** mode in the toolbar, then navigate away and back.
+</div>
+</div>
 
 ---
 
 <!-- _animateIn: bounceInRight -->
 <!-- _animateOut: bounceOutLeft -->
 
-## Bounce Animations
+## Available Animations (38)
 
-This slide bounces in from the right! 🏀
-
-```markdown
-<!-- _animateIn: bounceInRight -->
-<!-- _animateOut: bounceOutLeft -->
-```
-
-### Available Bounce Animations
-
-<div class="grid-2">
-<div>
-
-**Enter:**
-- `bounceIn`
-- `bounceInLeft`
-- `bounceInRight`
-- `bounceInUp`
-- `bounceInDown`
-
-</div>
-<div>
-
-**Exit:**
-- `bounceOut`
-- `bounceOutLeft`
-- `bounceOutRight`
-- `bounceOutUp`
-- `bounceOutDown`
-
-</div>
-</div>
-
----
-
-<!-- _animateIn: flipInY -->
-<!-- _animateOut: flipOutY -->
-
-## Flip Animations
-
-This slide flips in! 🔄
-
-```markdown
-<!-- _animateIn: flipInY -->
-<!-- _animateOut: flipOutY -->
-```
-
-### All Available Animation Types
-
-<div class="grid-3">
+<div class="g3">
 <div>
 
 **Fade** 🌫
@@ -438,19 +346,20 @@ This slide flips in! 🔄
 </div>
 <div>
 
-**Slide** ➡️
+**Slide & Bounce** ➡️
 - slideInLeft / slideOutLeft
 - slideInRight / slideOutRight
-- slideInUp / slideOutUp
-- slideInDown / slideOutDown
+- bounceIn / bounceOut
+- bounceInLeft / bounceOutLeft
+- bounceInRight / bounceOutRight
 
 </div>
 <div>
 
 **Special** ✨
-- rotateIn / rotateOut
 - flipInX / flipOutX
 - flipInY / flipOutY
+- rotateIn / rotateOut
 - lightSpeedIn / lightSpeedOut
 - rollIn / rollOut
 
@@ -459,284 +368,14 @@ This slide flips in! 🔄
 
 ---
 
-<!-- _class: section -->
-
-# 💻 Code & Technical
-
-Syntax highlighting and more
-
----
-
-## Code Blocks
-
-```typescript
-// Server-side Marp rendering
-import { Marp } from '@marp-team/marp-core'
-
-const marp = new Marp({ html: true, script: false })
-const { html, css } = marp.render(markdown)
-
-// Each slide is an SVG element
-const slides = html.match(/<svg[^>]*data-marpit-svg[^>]*>[\s\S]*?<\/svg>/gi)
-```
-
-```css
-/* Custom Marp styles */
-section.lead {
-  background: linear-gradient(135deg, #0f172a, #1e293b);
-  color: #f1f5f9;
-  text-align: center;
-}
-```
-
----
-
-<!-- _class: dark -->
-
-## Dark Theme Slide
-
-This slide uses `<!-- _class: dark -->` directive.
-
-You can create **multiple visual styles** within one presentation.
-
-<div class="grid-2">
-<div class="card" style="background: #1e293b; border-color: #334155;">
-
-### 🌙 Dark Cards
-Custom CSS adapts to any theme context.
-
-</div>
-<div class="card" style="background: #1e293b; border-color: #334155;">
-
-### ⭐ Flexible Styles
-Mix and match across slides.
-
-</div>
-</div>
-
----
-
-<!-- _class: section -->
-
-# ⌨️ Navigation & Controls
-
-All the ways to interact
-
----
-
-## Keyboard Shortcuts
-
-<div class="grid-2">
-<div>
-
-| Key | Action |
-|-----|--------|
-| `→` / `Space` | Next slide |
-| `←` | Previous slide |
-| `Home` | First slide |
-| `End` | Last slide |
-| `F` | Toggle fullscreen |
-| `Esc` | Exit fullscreen / Toggle editor |
-
-</div>
-<div>
-
-### Modes
-
-🖱️ **Click to Advance** — Toggle with the mouse switch. Click anywhere on the slide.
-
-▶️ **Auto-play** — Play/Pause button with configurable interval.
-
-📺 **Fullscreen** — Immersive presentation mode.
-
-✨ **Animations** — Select preset or use per-slide directives.
-
-</div>
-</div>
-
----
-
-## Speaker Notes
-
-This slide has hidden speaker notes! Check the panel below.
-
-Speaker notes are defined using HTML comments:
-
-```markdown
-<!-- These are speaker notes for the presenter -->
-```
-
-Or with `<aside class="notes">` tags.
-
-<!-- These are speaker notes for the presenter. They are hidden from the audience but visible in the Speaker Notes panel. You can use them to remember key talking points, statistics, or transition cues. -->
-
----
-
-<!-- _class: section -->
-
-# 💾 Export & Import
-
-Save and share your work
-
----
-
-## Save & Load Options
-
-<div class="grid-2">
-<div class="card">
-
-### 📥 Import
-- **Load .md files** — Direct Marp markdown
-- **Load .json** — Marp Player format
-- **Load .txt** — Plain text markdown
-- **Paste** — Direct paste into editor
-
-</div>
-<div class="card">
-
-### 📤 Export
-- **PDF** — Full presentation as PDF
-  - Landscape 16:9 format
-  - All styles preserved
-  - One slide per page
-- **JSON** — Save for later editing
-
-</div>
-</div>
-
----
-
-<!-- _animateIn: lightSpeedIn -->
-<!-- _animateOut: lightSpeedOut -->
-
-## 🚀 Animation Quick Reference
-
-This slide enters with `lightSpeedIn`!
-
-Add animations to your slides in 3 ways:
-
-<div class="step">
-<div class="step-num">1</div>
-<div><strong>Global Preset</strong> — Select from ✨ dropdown: None, Fade, Bounce, Slide, Flip</div>
-</div>
-
-<div class="step">
-<div class="step-num">2</div>
-<div><strong>Per-slide Override</strong> — Add <code>&lt;!-- _animateIn: X --&gt;</code> and <code>&lt;!-- _animateOut: X --&gt;</code> in your Markdown</div>
-</div>
-
-<div class="step">
-<div class="step-num">3</div>
-<div><strong>Per-slide Mode</strong> — Select ✨ Per-slide preset, then each slide uses its own directives</div>
-</div>
-
----
-
-<!-- _class: section -->
-<!-- _paginate: false -->
-
-# 🔗 API & MCP Integration
-
-Use Marp Player from any AI agent
-
----
-
-<!-- _animateIn: fadeInUp -->
-
-## 🤖 REST API for AI Agents
-
-Marp Player exposes **API v1** — a set of endpoints AI agents can call as tools:
-
-<div class="grid-2">
-<div class="card">
-
-### 📄 `POST /api/v1/render-pdf`
-Send Marp Markdown → get a **PDF file** back.
-Perfect for generating reports, decks, and documents.
-
-</div>
-<div class="card">
-
-### 🔗 `POST /api/v1/play`
-Send Marp Markdown → get a **shareable link**.
-The link opens a full-screen interactive viewer.
-
-</div>
-</div>
-
-<div class="grid-2" style="margin-top: 0.5em;">
-<div class="card">
-
-### 📋 `GET /api/v1/presentations/{id}`
-Retrieve saved presentation data and metadata.
-
-</div>
-<div class="card">
-
-### 🗑️ `DELETE /api/v1/presentations/{id}`
-Remove a stored presentation.
-
-</div>
-</div>
-
----
-
-<!-- _animateIn: fadeInUp -->
-
-## 🛠️ MCP Tool Integration
-
-Register Marp Player as a tool in your AI agent using the **OpenAPI spec**:
-
-```
-GET /api/v1/openapi   → Full OpenAPI 3.1 specification
-GET /api/v1           → API index with all endpoint URLs
-```
-
-### Works with:
-- **OpenAI GPTs** (Actions) — register the OpenAPI spec as an action
-- **Anthropic Claude** (MCP) — use as an MCP tool via OpenAPI
-- **LangChain / LlamaIndex** — import as a tool definition
-- **Any OpenAPI-compatible agent framework**
-
-### 🔐 Authentication
-Optional `Bearer` token via `Authorization` header.
-Configure `MARP_API_KEYS` env variable (comma-separated keys).
-
----
-
-<!-- _animateIn: fadeInUp -->
-
-## 📡 API Usage Examples
-
-### Create a shareable presentation link:
-```bash
-curl -X POST https://marp-play.techbuzzz.me/api/v1/play \
-  -H "Content-Type: application/json" \
-  -d '{"markdown": "---\nmarp: true\n---\n# Hello!", "title": "Demo"}'
-```
-
-### Generate a PDF:
-```bash
-curl -X POST https://marp-play.techbuzzz.me/api/v1/render-pdf \
-  -H "Content-Type: application/json" \
-  -d '{"markdown": "---\nmarp: true\n---\n# Hello!"}' \
-  -o slides.pdf
-```
-
-### AI agent prompt example:
-> *"Create a 5-slide presentation about our Q2 results and share the link"*
-
-The agent calls `/api/v1/play` → gets a URL → returns it to the user ✨
-
----
-
-<!-- _class: lead -->
+<!-- _class: hero -->
 <!-- _paginate: false -->
 <!-- _animateIn: rollIn -->
 
-# 🎉 That's All!
+# 🎉 Ready to Go!
 
-You've seen every feature of **Marp Player**
+Edit this deck · switch themes · share your work
 
-<p style="margin-top: 1em; font-size: 0.9em; color: #64748b;">Built with Next.js · Marp Core · Tailwind CSS · Animate.css</p>
-<p style="font-size: 0.8em; color: #475569;">API docs: <code>/api/v1/openapi</code> · This slide entered with <code>rollIn</code> animation!</p>
+<p style="margin-top:1em; font-size:0.85em; color:#64748b">
+Try the <strong>🎨 theme selector</strong> now — every slide adapts instantly.
+</p>

@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { Check, Copy, ExternalLink, Share2, Sparkles } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { Check, Copy, ExternalLink, Share2, Sparkles, ImageDown } from 'lucide-react'
+import { QRCodeCanvas } from 'qrcode.react'
 import {
   Dialog,
   DialogContent,
@@ -21,7 +22,9 @@ interface ShareModalProps {
 
 export function ShareModal({ open, onOpenChange, shareUrl, isLoading }: ShareModalProps) {
   const [copied, setCopied] = useState(false)
+  const [qrCopied, setQrCopied] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const qrRef = useRef<HTMLDivElement>(null)
 
   // Auto-select URL in input when modal opens
   useEffect(() => {
@@ -50,6 +53,44 @@ export function ShareModal({ open, onOpenChange, shareUrl, isLoading }: ShareMod
     }
   }
 
+  const handleCopyQrImage = useCallback(async () => {
+    if (!qrRef.current) return
+    const canvas = qrRef.current.querySelector('canvas')
+    if (!canvas) {
+      toast.error('QR code not ready')
+      return
+    }
+
+    try {
+      // Try modern clipboard API with blob
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((b) => {
+          if (b) resolve(b)
+          else reject(new Error('Failed to create blob'))
+        }, 'image/png')
+      })
+
+      await navigator.clipboard.write([
+        new ClipboardItem({ 'image/png': blob }),
+      ])
+      setQrCopied(true)
+      toast.success('QR code copied as image!', { duration: 2000 })
+      setTimeout(() => setQrCopied(false), 2000)
+    } catch {
+      // Fallback: download instead
+      try {
+        const dataUrl = canvas.toDataURL('image/png')
+        const a = document.createElement('a')
+        a.href = dataUrl
+        a.download = 'qr-code.png'
+        a.click()
+        toast.success('QR code downloaded as image', { duration: 2000 })
+      } catch {
+        toast.error('Could not copy QR code. Try right-click → Save Image.')
+      }
+    }
+  }, [])
+
   const handleOpen = () => {
     if (shareUrl) window.open(shareUrl, '_blank')
   }
@@ -68,7 +109,7 @@ export function ShareModal({ open, onOpenChange, shareUrl, isLoading }: ShareMod
             </div>
             <div>
               <DialogTitle className="text-lg">
-                {isLoading ? 'Creating link…' : 'Your presentation is shared!'}
+                {isLoading ? 'Creating link\u2026' : 'Your presentation is shared!'}
               </DialogTitle>
               <DialogDescription className="text-xs sm:text-sm mt-0.5">
                 {isLoading
@@ -79,7 +120,7 @@ export function ShareModal({ open, onOpenChange, shareUrl, isLoading }: ShareMod
           </div>
         </DialogHeader>
 
-        <div className="space-y-3 pt-2">
+        <div className="space-y-4 pt-2">
           {/* URL field */}
           <div>
             <label className="text-xs font-medium text-muted-foreground block mb-1.5">
@@ -91,7 +132,7 @@ export function ShareModal({ open, onOpenChange, shareUrl, isLoading }: ShareMod
                 type="text"
                 value={shareUrl || ''}
                 readOnly
-                placeholder={isLoading ? 'Please wait…' : ''}
+                placeholder={isLoading ? 'Please wait\u2026' : ''}
                 className="flex-1 px-3 py-2 text-xs sm:text-sm font-mono bg-muted/50 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/40 truncate"
                 onFocus={(e) => e.currentTarget.select()}
               />
@@ -117,6 +158,47 @@ export function ShareModal({ open, onOpenChange, shareUrl, isLoading }: ShareMod
               </Button>
             </div>
           </div>
+
+          {/* QR Code */}
+          {shareUrl && (
+            <div className="flex flex-col items-center gap-3">
+              <label className="text-xs font-medium text-muted-foreground self-start">
+                QR Code
+              </label>
+              <div
+                ref={qrRef}
+                className="bg-white p-3 rounded-xl border border-border shadow-sm"
+              >
+                <QRCodeCanvas
+                  value={shareUrl}
+                  size={180}
+                  level="M"
+                  marginSize={1}
+                  bgColor="#ffffff"
+                  fgColor="#1e293b"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyQrImage}
+                className="gap-1.5 h-8 px-3 text-xs"
+                title="Copy QR code as image"
+              >
+                {qrCopied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                    Copied as image
+                  </>
+                ) : (
+                  <>
+                    <ImageDown className="h-3.5 w-3.5" />
+                    Copy QR as image
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
 
           {/* Info */}
           <div className="text-[11px] sm:text-xs text-muted-foreground bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-900/50 rounded-lg px-3 py-2">

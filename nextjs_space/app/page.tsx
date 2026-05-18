@@ -17,6 +17,7 @@ import {
   MoreVertical,
   Share2,
   Zap,
+  FileDown,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -68,6 +69,8 @@ function HomeInner() {
   // Editor is collapsed by default for shared viewers
   const [showEditor, setShowEditor] = useState(!isSharedView)
   const [isExporting, setIsExporting] = useState(false)
+  const [isExportingPptx, setIsExportingPptx] = useState(false)
+  const [pptxProgress, setPptxProgress] = useState('')
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [sharedUrl, setSharedUrl] = useState<string | null>(null)
   const [shareModalOpen, setShareModalOpen] = useState(false)
@@ -313,6 +316,46 @@ function HomeInner() {
     }
   }
 
+  const handleExportPptx = async () => {
+    if (!markdown.trim() || totalSlides === 0) {
+      toast.error('No presentation to export')
+      return
+    }
+
+    setIsExportingPptx(true)
+    setPptxProgress('Generating PPTX...')
+    toast.info('Generating PPTX... This may take a moment.')
+
+    try {
+      const response = await fetch('/api/export-pptx', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ markdown, theme }),
+      })
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Export failed' }))
+        throw new Error(err.error || 'Export failed')
+      }
+
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `presentation-${Date.now()}.pptx`
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success('PPTX exported successfully!')
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to export PPTX'
+      console.error('PPTX export error:', error)
+      toast.error(msg)
+    } finally {
+      setIsExportingPptx(false)
+      setPptxProgress('')
+    }
+  }
+
   const handleLoadExample = async () => {
     try {
       const response = await fetch('/api/markdown?file=all-features.md')
@@ -321,7 +364,7 @@ function HomeInner() {
       if (data.content) {
         setMarkdown(data.content)
         setShowEditor(true)
-        toast.success('Example loaded \u2014 All Features Demo')
+        toast.success('Starter template loaded — try switching themes!')
       }
     } catch (error) {
       console.error('Error loading example:', error)
@@ -547,6 +590,22 @@ function HomeInner() {
               <span className="hidden md:inline">PDF</span>
             </Button>
 
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportPptx}
+              disabled={totalSlides === 0 || isExportingPptx}
+              className="hidden sm:flex gap-1 sm:gap-1.5 h-7 sm:h-8 px-2 sm:px-3 text-xs sm:text-sm"
+              title="Export to PPTX"
+            >
+              {isExportingPptx ? (
+                <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" />
+              ) : (
+                <FileDown className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              )}
+              <span className="hidden md:inline">{pptxProgress || 'PPTX'}</span>
+            </Button>
+
             {/* Share button - hidden for shared viewers */}
             {!isSharedView && (
               <Button
@@ -625,6 +684,21 @@ function HomeInner() {
                   >
                     <Download className="h-3.5 w-3.5" />
                     Export PDF
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleExportPptx()
+                      setShowMobileMenu(false)
+                    }}
+                    disabled={totalSlides === 0 || isExportingPptx}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {isExportingPptx ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <FileDown className="h-3.5 w-3.5" />
+                    )}
+                    {pptxProgress || 'Export PPTX'}
                   </button>
                   {!isSharedView && (
                     <button

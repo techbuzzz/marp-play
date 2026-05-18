@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { validateApiKey, apiError } from '@/lib/api-auth'
+import { injectThemeDirective } from '@/lib/marp-theme'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,27 +19,10 @@ export async function POST(request: NextRequest) {
       return apiError('Field "markdown" is required and must be a non-empty string')
     }
 
-    // Inject theme directive if a UI theme was specified and user markdown
-    // doesn't already declare one.
-    const THEME_MAP: Record<string, { theme: string; className?: string }> = {
-      modern: { theme: 'default' }, minimal: { theme: 'uncover' },
-      dark: { theme: 'gaia', className: 'invert' }, light: { theme: 'gaia' },
-    }
+    // Inject theme directive if a UI theme was specified
     let themedMarkdown = markdown
-    if (uiTheme && THEME_MAP[uiTheme]) {
-      const trimmed = markdown.trimStart()
-      if (!/^---\s*\n[\s\S]*?\ntheme\s*:/m.test(trimmed) && !/<!--\s*theme\s*:/i.test(trimmed)) {
-        const m = THEME_MAP[uiTheme]
-        let yamlLines = `theme: ${m.theme}`
-        if (m.className) yamlLines += `\nclass: ${m.className}`
-        const fmMatch = trimmed.match(/^(---\s*\n)([\s\S]*?\n)(---\s*(?:\n|$))/)
-        if (fmMatch) {
-          const [, open, body, close] = fmMatch
-          themedMarkdown = open + body + yamlLines + '\n' + close + trimmed.slice(fmMatch[0].length)
-        } else {
-          themedMarkdown = `---\nmarp: true\n${yamlLines}\n---\n${markdown}`
-        }
-      }
+    if (uiTheme) {
+      themedMarkdown = injectThemeDirective(markdown, uiTheme)
     }
 
     // Render with Marp

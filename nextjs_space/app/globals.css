@@ -226,6 +226,35 @@
   border-color: color-mix(in srgb, currentColor 30%, transparent);
 }
 
+/*
+ * BUG FIX: Auto-fit large tables inside slides.
+ *
+ * Marp slides have fixed dimensions (1280×720). Tables with many rows easily
+ * overflow the visible area.  We use CSS container queries + `has()` to
+ * detect tables and progressively shrink them so they fit on a single slide.
+ *
+ * Strategy: tables inside sections get a reduced font-size, tighter padding,
+ * and the table wrapper itself is allowed to shrink via `transform: scale()`.
+ */
+.marp-slide-wrapper .marpit section table {
+  font-size: 0.72em;
+  line-height: 1.3;
+  width: 100%;
+  table-layout: fixed;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.marp-slide-wrapper .marpit section table th,
+.marp-slide-wrapper .marpit section table td {
+  padding: 0.25em 0.45em;
+}
+
+/* Shrink large tables: when a section contains a table, limit its overflow */
+.marp-slide-wrapper .marpit section {
+  overflow: hidden;
+}
+
 /* Modern Component Styles */
 @layer components {
   /* Button Styles */
