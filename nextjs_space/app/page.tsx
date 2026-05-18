@@ -41,6 +41,7 @@ function HomeInner() {
   const {
     markdown,
     setMarkdown,
+    presentation,
     currentSlide,
     previousSlide,
     totalSlides,
@@ -317,20 +318,44 @@ function HomeInner() {
   }
 
   const handleExportPptx = async () => {
-    if (!markdown.trim() || totalSlides === 0) {
+    if (!markdown.trim() || totalSlides === 0 || !presentation?.slides?.length) {
       toast.error('No presentation to export')
       return
     }
 
     setIsExportingPptx(true)
-    setPptxProgress('Generating PPTX...')
+    setPptxProgress('Rendering slides...')
     toast.info('Generating PPTX... This may take a moment.')
 
     try {
+      const slides = presentation.slides
+      const slideImages: string[] = []
+      const slideNotes: string[] = []
+
+      // Render each slide SVG to PNG using an offscreen iframe + canvas
+      for (let i = 0; i < slides.length; i++) {
+        setPptxProgress(`Rendering slide ${i + 1}/${slides.length}...`)
+        const slide = slides[i]
+        slideNotes.push(slide.notes || '')
+
+        try {
+          const png = await renderSlideToImage(slide.html || '', css)
+          slideImages.push(png)
+        } catch (err) {
+          console.error(`Failed to render slide ${i + 1}:`, err)
+          // Use a tiny transparent 1x1 pixel as fallback
+          slideImages.push(
+            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQABNjN9GQAAAABJRU5ErkJggg=='
+          )
+        }
+      }
+
+      setPptxProgress('Assembling PPTX...')
+
       const response = await fetch('/api/export-pptx', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ markdown, theme }),
+        body: JSON.stringify({ slideImages, slideNotes, title: 'Presentation' }),
       })
 
       if (!response.ok) {
@@ -355,6 +380,53 @@ function HomeInner() {
       setPptxProgress('')
     }
   }
+
+  /**
+   * Renders a Marp slide (HTML with embedded SVG) to a PNG data URL
+   * using an offscreen container and html2canvas.
+   */
+  const renderSlideToImage = useCallback(
+    async (slideHtml: string, slideCss: string): Promise<string> => {
+      const html2canvas = (await import('html2canvas')).default
+      const W = 1280
+      const H = 720
+
+      // Create an offscreen container with exact slide dimensions
+      const container = document.createElement('div')
+      container.style.cssText = `position:fixed;left:-9999px;top:-9999px;width:${W}px;height:${H}px;overflow:hidden;background:#fff;z-index:-1;`
+
+      // Inject Marp CSS + slide HTML
+      const styleEl = document.createElement('style')
+      styleEl.textContent = slideCss + `\n.marpit > svg { display: block; width: ${W}px; height: ${H}px; }`
+      container.appendChild(styleEl)
+
+      const slideContainer = document.createElement('div')
+      slideContainer.innerHTML = slideHtml
+      container.appendChild(slideContainer)
+
+      document.body.appendChild(container)
+
+      // Wait for fonts/images to settle
+      await new Promise((r) => setTimeout(r, 300))
+
+      try {
+        const canvas = await html2canvas(container, {
+          width: W,
+          height: H,
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+        })
+
+        return canvas.toDataURL('image/png')
+      } finally {
+        document.body.removeChild(container)
+      }
+    },
+    [],
+  )
 
   const handleLoadExample = async () => {
     try {
